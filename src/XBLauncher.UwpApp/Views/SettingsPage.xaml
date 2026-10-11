@@ -1,0 +1,39 @@
+<Page
+    x:Class="XBLauncher.UwpApp.Views.SettingsPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    mc:Ignorable="d">
+
+    <ScrollViewer VerticalScrollBarVisibility="Auto">
+        <StackPanel>
+            <!-- Profile Settings -->
+            <Border Style="{StaticResource Card}" Margin="0,0,0,12">
+                <StackPanel>
+                    <TextBlock Text="Profil" FontSize="18" FontWeight="SemiBold" Foreground="{StaticResource TextBrush}" Margin="0,0,0,12" />
+                    <TextBlock Text="Name" FontSize="12" Foreground="{StaticResource MutedBrush}" Margin="0,0,0,4" />
+                    <TextBox x:Name="NameBox" Margin="0,0,0,12" />
+                    <TextBlock Text="Maximaler RAM (MB)" FontSize="12" Foreground="{StaticResource MutedBrush}" Margin="0,0,0,4" />
+                    <StackPanel Orientation="Horizontal" Margin="0,0,0,12">
+                        <Slider x:Name="RamSlider" Minimum="1024" Maximum="4096" Value="3072" Width="280" TickFrequency="512" IsSnapToTickEnabled="True" ValueChanged="RamSlider_ValueChanged" />
+                        <TextBlock x:Name="RamLabel" Text="3072 MB" FontSize="14" Foreground="{StaticResource TextBrush}" Margin="12,0,0,0" VerticalAlignment="Center" />
+                    </StackPanel>
+                    <Button Content="Speichern" Style="{StaticResource PrimaryButton}" HorizontalAlignment="Left" Click="Save_Click" />
+                </StackPanel>
+            </Border>
+
+            <!-- Info -->
+            <Border Style="{StaticResource Card}">
+                <StackPanel>
+                    <TextBlock Text="Über XB-Launcher" FontSize="18" FontWeight="SemiBold" Foreground="{StaticResource TextBrush}" Margin="0,0,0,12" />
+                    <TextBlock Text="XB-Launcher v1.0 für Xbox Series X|S" FontSize="14" Foreground="{StaticResource MutedBrush}" Margin="0,0,0,8" />
+                    <TextBlock Text="• Minecraft: Java Edition 1.21 – 26.4" FontSize="13" Foreground="{StaticResource MutedBrush}" Margin="0,0,0,4" />
+                    <TextBlock Text="• Mod-Loader: Vanilla / Fabric / NeoForge / Forge" FontSize="13" Foreground="{StaticResource MutedBrush}" Margin="0,0,0,4" />
+                    <TextBlock Text="• Mods/Shader/Packs von Modrinth" FontSize="13" Foreground="{StaticResource MutedBrush}" Margin="0,0,0,4" />
+                    <TextBlock Text="• Automatische Java-Bereitstellung" FontSize="13" Foreground="{StaticResource MutedBrush}" />
+                </StackPanel>
+            </Border>
+        </StackPanel>
+    </ScrollViewer>
+</Page>

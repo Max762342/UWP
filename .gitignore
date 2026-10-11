@@ -8,6 +8,11 @@ obj/
 .vscode/
 node_modules/
 
+# Release ZIP / extracted payload (too large for git)
+XB-Launcher-Release/
+XB-Launcher-Release.zip
+*.zip
+
 # Temporary files
 *.log
 build_log.txt
