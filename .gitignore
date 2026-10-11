@@ -1,0 +1,25 @@
+# Build artifacts
+output/
+bin/
+obj/
+*.user
+*.suo
+.vs/
+.vscode/
+node_modules/
+
+# Temporary files
+*.log
+build_log.txt
+build_err.txt
+winsdk/
+winsdk-layout/
+winsdk-extract/
+
+# Signing certificates (keep secure!)
+*.pfx
+*.p12
+
+# OS generated
+.DS_Store
+Thumbs.db

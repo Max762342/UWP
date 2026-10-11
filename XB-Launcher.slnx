@@ -1,0 +1,6 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/XBLauncher.App/XBLauncher.App.csproj" />
+    <Project Path="src/XBLauncher.Core/XBLauncher.Core.csproj" />
+  </Folder>
+</Solution>

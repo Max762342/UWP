@@ -1,0 +1,21 @@
+{
+  "name": "XB-Launcher UWP",
+  "image": "mcr.microsoft.com/dotnet/sdk:10.0",
+  "features": {
+    "ghcr.io/devcontainers/features/desktop-lite:1": {
+      "desktop": "xfce",
+      "password": "xblauncher"
+    }
+  },
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "ms-dotnettools.csharp",
+        "ms-dotnettools.vscode-dotnet-runtime",
+        "ms-vscode.powershell"
+      ]
+    }
+  },
+  "postCreateCommand": "bash .devcontainer/setup.sh",
+  "remoteUser": "vscode"
+}

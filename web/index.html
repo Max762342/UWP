@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>XB-Launcher Web</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <h1>XB-Launcher</h1>
+    <div class="tagline">Minecraft Java für Xbox · Web</div>
+
+    <button class="nav-btn active" data-page="play">▶  Spielen</button>
+    <button class="nav-btn" data-page="mods">🧩  Mods Hub</button>
+    <button class="nav-btn" data-page="shaders">🎨  Shader Hub</button>
+    <button class="nav-btn" data-page="packs">📦  Packs Hub</button>
+    <button class="nav-btn" data-page="settings">⚙  Einstellungen</button>
+
+    <div class="sidebar-footer">
+      XB-Launcher Web<br />
+      Läuft im Xbox-Browser<br />
+      Version 1.0
+    </div>
+  </aside>
+
+  <!-- Main content -->
+  <main class="main">
+    <!-- PLAY PAGE -->
+    <section id="page-play" class="page">
+      <div class="page-header">
+        <h2>Spielen</h2>
+        <div class="subtitle">Wähle Minecraft-Version und Mod-Loader</div>
+      </div>
+
+      <div class="card">
+        <h3>Profil &amp; Version</h3>
+        <label for="profile-select">Profil</label>
+        <select id="profile-select"></select>
+
+        <label for="target-select">Version + Loader</label>
+        <select id="target-select"></select>
+
+        <button class="btn btn-secondary" id="add-profile-btn">＋ Neues Profil</button>
+      </div>
+
+      <h3>Verfügbare Versionen</h3>
+      <div class="grid" id="version-grid"></div>
+
+      <button class="btn btn-primary btn-block" id="play-btn">▶  SPIELEN</button>
+    </section>
+
+    <!-- MODS HUB -->
+    <section id="page-mods" class="page" hidden>
+      <div class="page-header">
+        <h2>Mods Hub</h2>
+        <div class="subtitle">Installiere Mods direkt aus Modrinth</div>
+      </div>
+      <div class="search-row">
+        <input id="search-mods" type="text" placeholder="Mod suchen (z. B. sodium)…" />
+        <button class="btn btn-primary" data-search="mods">Suchen</button>
+      </div>
+      <div class="grid" id="results-mods"></div>
+    </section>
+
+    <!-- SHADER HUB -->
+    <section id="page-shaders" class="page" hidden>
+      <div class="page-header">
+        <h2>Shader Hub</h2>
+        <div class="subtitle">Shader-Packs für mehr Grafik-Qualität</div>
+      </div>
+      <div class="search-row">
+        <input id="search-shaders" type="text" placeholder="Shader suchen (z. B. complementary)…" />
+        <button class="btn btn-primary" data-search="shaders">Suchen</button>
+      </div>
+      <div class="grid" id="results-shaders"></div>
+    </section>
+
+    <!-- PACKS HUB -->
+    <section id="page-packs" class="page" hidden>
+      <div class="page-header">
+        <h2>Packs Hub</h2>
+        <div class="subtitle">Resource- und Textur-Packs</div>
+      </div>
+      <div class="search-row">
+        <input id="search-packs" type="text" placeholder="Pack suchen (z. B. faithful)…" />
+        <button class="btn btn-primary" data-search="packs">Suchen</button>
+      </div>
+      <div class="grid" id="results-packs"></div>
+    </section>
+
+    <!-- SETTINGS -->
+    <section id="page-settings" class="page" hidden>
+      <div class="page-header">
+        <h2>Einstellungen</h2>
+        <div class="subtitle">Profil, RAM und Pfade</div>
+      </div>
+
+      <div class="card">
+        <h3>Profil</h3>
+        <label for="profile-name">Name</label>
+        <input id="profile-name" type="text" placeholder="Profilname" />
+
+        <label for="ram-slider">Maximaler RAM (MB): <span id="ram-value">3072</span></label>
+        <input id="ram-slider" type="range" min="1024" max="4096" step="512" value="3072" />
+
+        <button class="btn btn-primary" id="save-profile-btn">Speichern</button>
+      </div>
+
+      <div class="card">
+        <h3>Über</h3>
+        <p style="color: var(--muted); line-height: 1.7;">
+          XB-Launcher Web – Minecraft: Java Edition Launcher für Xbox Series X|S.<br />
+          Diese Web-Version läuft im Xbox-Browser und ermöglicht die Auswahl von
+          Versionen, Loadern und Inhalten über Modrinth.
+        </p>
+      </div>
+    </section>
+
+    <!-- Status bar -->
+    <div class="status-bar">
+      <div class="status-text" id="status-text">Bereit.</div>
+      <div class="progress">
+        <div class="progress-bar" id="progress-bar"></div>
+      </div>
+    </div>
+  </main>
+
+  <script src="data.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

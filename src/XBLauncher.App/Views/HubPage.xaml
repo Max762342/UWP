@@ -1,0 +1,55 @@
+<UserControl x:Class="XBLauncher.App.Views.HubPage"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <Grid Grid.Row="0" Margin="0,0,0,12">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+            <TextBox x:Name="SearchBox" Grid.Column="0" Margin="0,0,8,0" KeyDown="SearchBox_KeyDown" />
+            <Button Grid.Column="1" Content="Suchen" Style="{StaticResource PrimaryButton}" Click="Search_Click" />
+        </Grid>
+
+        <TextBlock Grid.Row="1" Text="Ergebnisse" Style="{StaticResource H2}" Margin="0,0,0,8" />
+
+        <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto">
+            <ItemsControl x:Name="ResultsList">
+                <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate>
+                        <WrapPanel Orientation="Horizontal" />
+                    </ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                        <Border Style="{StaticResource Card}" Margin="0,0,10,10" Width="340">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+                                <StackPanel Grid.Column="0" Margin="0,0,10,0">
+                                    <TextBlock Text="{Binding Title}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
+                                    <TextBlock Text="{Binding Description}" Style="{StaticResource MutedText}" FontSize="11"
+                                               TextWrapping="Wrap" MaxHeight="40" TextTrimming="CharacterEllipsis" />
+                                    <TextBlock Style="{StaticResource MutedText}" FontSize="10" Margin="0,4,0,0">
+                                        <Run Text="von " /><Run Text="{Binding Author, Mode=OneWay}" />
+                                        <Run Text="  ·  " /><Run Text="{Binding Downloads, Mode=OneWay}" /><Run Text=" Downloads" />
+                                    </TextBlock>
+                                </StackPanel>
+                                <Button Grid.Column="1" Content="＋" Style="{StaticResource PrimaryButton}"
+                                        Padding="12,8" VerticalAlignment="Top" Click="Install_Click" />
+                            </Grid>
+                        </Border>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+        </ScrollViewer>
+    </Grid>
+</UserControl>

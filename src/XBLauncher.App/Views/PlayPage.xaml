@@ -1,0 +1,57 @@
+<UserControl x:Class="XBLauncher.App.Views.PlayPage"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <Border Grid.Row="0" Style="{StaticResource Card}" Margin="0,0,0,12">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <StackPanel Grid.Column="0" Margin="0,0,12,0">
+                    <TextBlock Text="Profil" Style="{StaticResource MutedText}" FontSize="11" />
+                    <ComboBox x:Name="ProfileBox" SelectionChanged="ProfileBox_SelectionChanged" />
+                </StackPanel>
+                <StackPanel Grid.Column="1" Margin="0,0,12,0">
+                    <TextBlock Text="Version + Loader" Style="{StaticResource MutedText}" FontSize="11" />
+                    <ComboBox x:Name="TargetBox" />
+                </StackPanel>
+                <Button Grid.Column="2" Content="＋ Profil" Style="{StaticResource SecondaryButton}" Click="AddProfile_Click" VerticalAlignment="Bottom" />
+            </Grid>
+        </Border>
+
+        <TextBlock Grid.Row="1" Text="Verfügbare Versionen" Style="{StaticResource H2}" Margin="0,4,0,8" />
+
+        <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto">
+            <ItemsControl x:Name="VersionList">
+                <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate>
+                        <WrapPanel Orientation="Horizontal" />
+                    </ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                        <Border Style="{StaticResource Card}" Margin="0,0,10,10" Width="220" Cursor="Hand" MouseLeftButtonUp="Version_Click">
+                            <StackPanel>
+                                <TextBlock Text="{Binding MinecraftVersion}" FontSize="18" FontWeight="Bold" />
+                                <TextBlock Text="{Binding Loader}" Style="{StaticResource MutedText}" Margin="0,2,0,0" />
+                                <TextBlock Text="{Binding LoaderVersion}" Style="{StaticResource MutedText}" FontSize="11" />
+                            </StackPanel>
+                        </Border>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+        </ScrollViewer>
+
+        <Button Grid.Row="3" x:Name="PlayButton" Content="▶  SPIELEN" Style="{StaticResource PrimaryButton}"
+                FontSize="18" Padding="24,14" HorizontalAlignment="Stretch" Margin="0,12,0,0" Click="PlayButton_Click" />
+    </Grid>
+</UserControl>
