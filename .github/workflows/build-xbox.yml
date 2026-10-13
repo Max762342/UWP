@@ -19,14 +19,30 @@ jobs:
     - name: Setup NuGet
       uses: nuget/setup-nuget@v2
 
-    - name: Restore (Core)
-      run: nuget restore src/XBLauncher.Core/XBLauncher.Core.csproj || dotnet restore src/XBLauncher.Core/XBLauncher.Core.csproj
-
-    - name: Restore (UWP)
-      run: nuget restore src/XBLauncher.UwpApp/XBLauncher.UwpApp.csproj
-
-    - name: Build UWP (Release x64, .NET Native)
-      run: msbuild src/XBLauncher.UwpApp/XBLauncher.UwpApp.csproj /p:Configuration=Release /p:Platform=x64 /p:AppxBundle=Never /p:UapAppxPackageBuildMode=SideloadOnly /p:AppxPackageSigningEnabled=false /restore /m /v:m
+    - name: Restore + Build UWP (Release x64)
+      shell: pwsh
+      run: |
+        $ErrorActionPreference = "Continue"
+        New-Item -ItemType Directory -Force -Path output | Out-Null
+        # msbuild /restore handles ProjectReference + PackageReference together.
+        msbuild src/XBLauncher.UwpApp/XBLauncher.UwpApp.csproj `
+          /t:Restore,Build `
+          /p:Configuration=Release /p:Platform=x64 `
+          /p:AppxBundle=Never `
+          /p:UapAppxPackageBuildMode=SideloadOnly `
+          /p:AppxPackageSigningEnabled=false `
+          /restore /m /v:m /bl:output/uwp.binlog 2>&1 | Tee-Object -FilePath output/uwp-build.log
+        $code = $LASTEXITCODE
+        # Surface the tail of the log in the job summary so failures are readable
+        # from the Actions UI without downloading the full log.
+        $tail = Get-Content output/uwp-build.log -Tail 160 -ErrorAction SilentlyContinue
+        $sb = New-Object System.Text.StringBuilder
+        [void]$sb.AppendLine("## UWP build log (tail)")
+        [void]$sb.AppendLine("```")
+        foreach ($line in $tail) { [void]$sb.AppendLine($line) }
+        [void]$sb.AppendLine("```")
+        Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value $sb.ToString()
+        if ($code -ne 0) { throw "UWP build failed (exit $code). See summary for the error tail." }
 
     - name: Locate makeappx / signtool
       id: sdk
