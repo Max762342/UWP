@@ -95,18 +95,26 @@ jobs:
         "makeappx=$($makeappx.FullName)" >> $env:GITHUB_OUTPUT
         "signtool=$($signtool.FullName)" >> $env:GITHUB_OUTPUT
 
-    - name: Locate built appx layout
+    - name: Locate built app package
       id: find
       shell: pwsh
       run: |
-        # MSBuild with UapAppxPackageBuildMode produces an .appx under AppPackages.
-        $appx = Get-ChildItem "src/XBLauncher.UwpApp/AppPackages" -Recurse -Filter *.appx -ErrorAction SilentlyContinue | Select-Object -First 1
-        if (-not $appx) {
-          $appx = Get-ChildItem "src/XBLauncher.UwpApp" -Recurse -Filter *.appx -ErrorAction SilentlyContinue | Select-Object -First 1
-        }
-        if (-not $appx) { throw "No .appx produced by the UWP build." }
         New-Item -ItemType Directory -Force -Path output | Out-Null
-        Copy-Item $appx.FullName "output/XB-Launcher-UWP.appx" -Force
+        # The app package is produced as .msix under AppPackages\..._Test\.
+        # Prefer it; only fall back to .appx. Never pick a framework package.
+        $pkg = Get-ChildItem "src/XBLauncher.UwpApp/AppPackages" -Recurse -Include *.msix,*.appx -ErrorAction SilentlyContinue |
+               Where-Object { $_.Name -like 'XBLauncher.UwpApp_*' } |
+               Sort-Object Length -Descending |
+               Select-Object -First 1
+        if (-not $pkg) {
+          $pkg = Get-ChildItem "src/XBLauncher.UwpApp" -Recurse -Include *.msix,*.appx -ErrorAction SilentlyContinue |
+                 Where-Object { $_.Name -like 'XBLauncher.UwpApp_*' } |
+                 Sort-Object Length -Descending |
+                 Select-Object -First 1
+        }
+        if (-not $pkg) { throw "No app package (XBLauncher.UwpApp_*.msix/.appx) produced by the UWP build." }
+        Write-Host "Found app package: $($pkg.FullName) ($([math]::Round($pkg.Length/1MB,1)) MB)"
+        Copy-Item $pkg.FullName "output/XB-Launcher-UWP.appx" -Force
         "appx=output/XB-Launcher-UWP.appx" >> $env:GITHUB_OUTPUT
 
     - name: Upload Artifact
