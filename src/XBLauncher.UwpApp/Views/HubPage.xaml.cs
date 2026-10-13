@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
 using XBLauncher.Core.Modrinth;
+using XBLauncher.UwpApp.Services;
 
 namespace XBLauncher.UwpApp.Views
 {
@@ -10,7 +11,7 @@ namespace XBLauncher.UwpApp.Views
     {
         private MainPage _main;
         private string _hubType;
-        private ModrinthClient _modrinth = new ModrinthClient();
+        private ModrinthClient _modrinth => AppServices.Instance.Modrinth;
 
         public HubPage()
         {
@@ -80,9 +81,28 @@ namespace XBLauncher.UwpApp.Views
             {
                 try
                 {
+                    var services = AppServices.Instance;
+
+                    // Install requires a signed-in profile to know the game dir.
+                    var profiles = services.LoadProfiles();
+                    var profile = profiles[0];
+                    var target = XBLauncher.Core.Data.TargetCatalog.Find(profile.TargetId)
+                                 ?? XBLauncher.Core.Data.TargetCatalog.Build()[0];
+
+                    var hub = _hubType switch
+                    {
+                        "mods" => HubKind.Mods,
+                        "shaders" => HubKind.Shaders,
+                        "packs" => HubKind.ResourcePacks,
+                        _ => HubKind.Mods
+                    };
+
                     _main?.SetStatus($"Installiere {project.Title}...", 10);
-                    await System.Threading.Tasks.Task.Delay(500);
-                    _main?.SetStatus($"\"{project.Title}\" zur Installationsliste hinzugefügt.", 100);
+
+                    var progress = new Progress<double>(p => _main?.SetStatus($"Installiere {project.Title}...", 10 + p * 80));
+                    var dest = await services.Content.InstallAsync(profile, target, hub, project, progress);
+
+                    _main?.SetStatus($"\"{project.Title}\" installiert nach {dest}", 100);
                 }
                 catch (Exception ex)
                 {

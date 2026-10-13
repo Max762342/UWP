@@ -1,6 +1,5 @@
 using System.Net.Http;
 using System.Text.Json;
-using System.Web;
 
 namespace XBLauncher.Core.Modrinth;
 
@@ -32,7 +31,7 @@ public sealed partial class ModrinthClient : IDisposable
     {
         _http = http ?? new HttpClient(new SocketsHttpHandler
         {
-            AutomaticDecompression = System.Net.DecompressionMethods.All,
+            AutomaticDecompression = (System.Net.DecompressionMethods.GZip | System.Net.DecompressionMethods.Deflate),
             PooledConnectionLifetime = TimeSpan.FromMinutes(5)
         })
         {

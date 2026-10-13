@@ -1,4 +1,4 @@
-name: Build XB-Launcher for Xbox
+name: Build XB-Launcher UWP (Xbox)
 
 on:
   push:
@@ -6,71 +6,53 @@ on:
   workflow_dispatch:
 
 jobs:
-  build:
+  build-uwp:
     runs-on: windows-latest
-    
+
     steps:
     - name: Checkout
       uses: actions/checkout@v4
-    
-    - name: Setup .NET 10
-      uses: actions/setup-dotnet@v4
-      with:
-        dotnet-version: '10.0.x'
-    
-    - name: Restore dependencies
-      run: dotnet restore src/XBLauncher.Uwp/XBLauncher.Uwp.csproj
-    
-    - name: Build (Release)
-      run: dotnet build src/XBLauncher.Uwp/XBLauncher.Uwp.csproj -c Release
-    
-    - name: Publish
-      run: |
-        dotnet publish src/XBLauncher.Uwp/XBLauncher.Uwp.csproj `
-          -c Release `
-          -r win-x64 `
-          --self-contained true `
-          -o output/publish
-    
-    - name: Generate Assets
+
+    - name: Add MSBuild to PATH
+      uses: microsoft/setup-msbuild@v2
+
+    - name: Setup NuGet
+      uses: nuget/setup-nuget@v2
+
+    - name: Restore (Core)
+      run: nuget restore src/XBLauncher.Core/XBLauncher.Core.csproj || dotnet restore src/XBLauncher.Core/XBLauncher.Core.csproj
+
+    - name: Restore (UWP)
+      run: nuget restore src/XBLauncher.UwpApp/XBLauncher.UwpApp.csproj
+
+    - name: Build UWP (Release x64, .NET Native)
+      run: msbuild src/XBLauncher.UwpApp/XBLauncher.UwpApp.csproj /p:Configuration=Release /p:Platform=x64 /p:AppxBundle=Never /p:UapAppxPackageBuildMode=SideloadOnly /p:AppxPackageSigningEnabled=false /restore /m /v:m
+
+    - name: Locate makeappx / signtool
+      id: sdk
       shell: pwsh
       run: |
-        New-Item -ItemType Directory -Force -Path output/appx/Assets | Out-Null
-        
-        Add-Type -AssemblyName System.Drawing
-        
-        function New-Tile($path, $w, $h, $text) {
-          $bmp = New-Object System.Drawing.Bitmap $w, $h
-          $g = [System.Drawing.Graphics]::FromImage($bmp)
-          $g.Clear([System.Drawing.Color]::FromArgb(255, 14, 17, 22))
-          $brush = New-Object System.Drawing.SolidBrush ([System.Drawing.Color]::FromArgb(255, 61, 220, 132))
-          $font = New-Object System.Drawing.Font "Segoe UI", ([math]::Max(8, [int]($w/6))), ([System.Drawing.FontStyle]::Bold)
-          $size = $g.MeasureString($text, $font)
-          $g.DrawString($text, $font, $brush, (($w - $size.Width)/2), (($h - $size.Height)/2))
-          $g.Dispose()
-          $bmp.Save($path, [System.Drawing.Imaging.ImageFormat]::Png)
-          $bmp.Dispose()
-        }
-        
-        New-Tile "output/appx/Assets/StoreLogo.png" 50 50 "XB"
-        New-Tile "output/appx/Assets/Square44x44Logo.png" 44 44 "XB"
-        New-Tile "output/appx/Assets/Square150x150Logo.png" 150 150 "XB"
-        New-Tile "output/appx/Assets/Wide310x150Logo.png" 310 150 "XB-Launcher"
-        New-Tile "output/appx/Assets/SplashScreen.png" 620 300 "XB-Launcher"
-        
-        Copy-Item packaging/AppxManifest.xml output/appx/AppxManifest.xml -Force
-        Copy-Item output/publish/* output/appx/ -Recurse -Force
-        
-        if (Test-Path native/xb_shim/xb_shim.dll) {
-          Copy-Item native/xb_shim/xb_shim.dll output/appx/ -Force
-        }
-    
-    - name: Create APPX
+        $kits = "${env:ProgramFiles(x86)}\Windows Kits\10\bin"
+        $makeappx = Get-ChildItem $kits -Recurse -Filter makeappx.exe -ErrorAction SilentlyContinue | Where-Object { $_.FullName -match '\\x64\\' } | Sort-Object FullName -Descending | Select-Object -First 1
+        $signtool  = Get-ChildItem $kits -Recurse -Filter signtool.exe  -ErrorAction SilentlyContinue | Where-Object { $_.FullName -match '\\x64\\' } | Sort-Object FullName -Descending | Select-Object -First 1
+        if (-not $makeappx) { throw "makeappx.exe not found" }
+        "makeappx=$($makeappx.FullName)" >> $env:GITHUB_OUTPUT
+        "signtool=$($signtool.FullName)" >> $env:GITHUB_OUTPUT
+
+    - name: Locate built appx layout
+      id: find
       shell: pwsh
       run: |
-        $makeappx = "${env:ProgramFiles(x86)}\Windows Kits\10\bin\10.0.26100.0\x64\makeappx.exe"
-        & $makeappx pack /d output/appx /p output/XB-Launcher.appx /o
-    
+        # MSBuild with UapAppxPackageBuildMode produces an .appx under AppPackages.
+        $appx = Get-ChildItem "src/XBLauncher.UwpApp/AppPackages" -Recurse -Filter *.appx -ErrorAction SilentlyContinue | Select-Object -First 1
+        if (-not $appx) {
+          $appx = Get-ChildItem "src/XBLauncher.UwpApp" -Recurse -Filter *.appx -ErrorAction SilentlyContinue | Select-Object -First 1
+        }
+        if (-not $appx) { throw "No .appx produced by the UWP build." }
+        New-Item -ItemType Directory -Force -Path output | Out-Null
+        Copy-Item $appx.FullName "output/XB-Launcher-UWP.appx" -Force
+        "appx=output/XB-Launcher-UWP.appx" >> $env:GITHUB_OUTPUT
+
     - name: Create Certificate
       shell: pwsh
       run: |
@@ -83,18 +65,17 @@ jobs:
           -CertStoreLocation "Cert:\CurrentUser\My" `
           -TextExtension @("2.5.29.37={text}1.3.6.1.5.5.7.3.3", "2.5.29.19={text}")
         Export-PfxCertificate -Cert $cert -FilePath output/XB-Launcher.pfx -Password $certPwd | Out-Null
-    
+
     - name: Sign APPX
       shell: pwsh
       run: |
-        $signtool = "${env:ProgramFiles(x86)}\Windows Kits\10\bin\10.0.26100.0\x64\signtool.exe"
-        & $signtool sign /f output/XB-Launcher.pfx /p "xblauncher" /fd SHA256 output/XB-Launcher.appx
-    
+        & "${{ steps.sdk.outputs.signtool }}" sign /f output/XB-Launcher.pfx /p "xblauncher" /fd SHA256 output/XB-Launcher-UWP.appx
+
     - name: Upload Artifact
       uses: actions/upload-artifact@v4
       with:
-        name: XB-Launcher-Xbox
+        name: XB-Launcher-UWP-Xbox
         path: |
-          output/XB-Launcher.appx
+          output/XB-Launcher-UWP.appx
           output/XB-Launcher.pfx
         retention-days: 90

@@ -25,7 +25,7 @@ public sealed partial class MinecraftAuthService : IDisposable
     {
         _http = http ?? new HttpClient(new SocketsHttpHandler
         {
-            AutomaticDecompression = System.Net.DecompressionMethods.All
+            AutomaticDecompression = (System.Net.DecompressionMethods.GZip | System.Net.DecompressionMethods.Deflate)
         })
         {
             Timeout = TimeSpan.FromMinutes(2)

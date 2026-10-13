@@ -21,15 +21,15 @@ public sealed partial class ModrinthClient
         resp.EnsureSuccessStatusCode();
 
         var total = resp.Content.Headers.ContentLength ?? file.Size;
-        await using (var input = await resp.Content.ReadAsStreamAsync(ct).ConfigureAwait(false))
-        await using (var output = File.Create(destFile))
+        using (var input = await resp.Content.ReadAsStreamAsync(ct).ConfigureAwait(false))
+        using (var output = File.Create(destFile))
         {
             var buffer = new byte[81920];
             long read = 0;
             int n;
-            while ((n = await input.ReadAsync(buffer, ct).ConfigureAwait(false)) > 0)
+            while ((n = await input.ReadAsync(buffer, 0, buffer.Length, ct).ConfigureAwait(false)) > 0)
             {
-                await output.WriteAsync(buffer.AsMemory(0, n), ct).ConfigureAwait(false);
+                await output.WriteAsync(buffer, 0, n, ct).ConfigureAwait(false);
                 read += n;
                 if (total > 0)
                     progress?.Report((double)read / total);
@@ -42,16 +42,18 @@ public sealed partial class ModrinthClient
         {
             // Verify against a separately opened read stream after the write
             // stream has been flushed/closed, so no buffered bytes are missed.
-            await using var verify = File.OpenRead(destFile);
-            using var sha = System.Security.Cryptography.SHA1.Create();
-            var actual = Convert.ToHexString(await sha.ComputeHashAsync(verify, ct).ConfigureAwait(false))
-                .ToLowerInvariant();
-            if (!string.Equals(actual, sha1, StringComparison.OrdinalIgnoreCase))
+            using (var verify = File.OpenRead(destFile))
             {
-                await verify.DisposeAsync().ConfigureAwait(false);
-                File.Delete(destFile);
-                throw new InvalidDataException(
-                    $"Hash mismatch for {file.Filename}: expected {sha1}, got {actual}");
+                using (var sha = System.Security.Cryptography.SHA1.Create())
+                {
+                    var actual = BitConverter.ToString(sha.ComputeHash(verify)).Replace("-", "").ToLowerInvariant();
+                    if (!string.Equals(actual, sha1, StringComparison.OrdinalIgnoreCase))
+                    {
+                        File.Delete(destFile);
+                        throw new InvalidDataException(
+                            $"Hash mismatch for {file.Filename}: expected {sha1}, got {actual}");
+                    }
+                }
             }
         }
     }

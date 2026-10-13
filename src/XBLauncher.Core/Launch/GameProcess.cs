@@ -23,13 +23,14 @@ public static class GameProcess
             CreateNoWindow = true
         };
 
-        psi.ArgumentList.Add("-Xms512M");
-        psi.ArgumentList.Add($"-Xmx{plan.MaxMemoryMb}M");
+        var args = new System.Diagnostics.CommandArguments(psi);
+        args.Add("-Xms512M");
+        args.Add($"-Xmx{plan.MaxMemoryMb}M");
         foreach (var arg in plan.Arguments)
-            psi.ArgumentList.Add(arg);
-        psi.ArgumentList.Add(plan.MainClass);
+            args.Add(arg);
+        args.Add(plan.MainClass);
         foreach (var arg in plan.GameArgs)
-            psi.ArgumentList.Add(arg);
+            args.Add(arg);
 
         foreach (var (key, value) in plan.EnvironmentVariables)
             psi.Environment[key] = value;

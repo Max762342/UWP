@@ -62,7 +62,9 @@ public sealed partial class RuntimeInstaller
 
             if (lib.Downloads?.Artifact is { } artifact)
             {
-                var rel = artifact.Url.Split("/libraries/").LastOrDefault() ?? artifact.Url;
+                var rel = artifact.Url.Contains("/libraries/")
+                    ? artifact.Url.Substring(artifact.Url.IndexOf("/libraries/", StringComparison.Ordinal) + "/libraries/".Length)
+                    : artifact.Url;
                 var path = Path.Combine(LibrariesDir, rel.Replace('/', Path.DirectorySeparatorChar));
                 await DownloadVerifiedAsync(artifact, path, lib.Name,
                     new InstallProgress("libraries", 0.15 + 0.5 * i / totalLibs, lib.Name), progress, ct)
@@ -87,7 +89,7 @@ public sealed partial class RuntimeInstaller
             await DownloadVerifiedAsync(nativeArtifact, zipPath, lib.Name,
                 new InstallProgress("natives", 0.7, lib.Name), progress, ct).ConfigureAwait(false);
 
-            try { ZipFile.ExtractToDirectory(zipPath, nativesDir, overwriteFiles: true); }
+            try { ZipFileExtensions.ExtractToDirectoryOverwrite(zipPath, nativesDir); }
             catch (InvalidDataException) { }
         }
 
@@ -102,12 +104,12 @@ public sealed partial class RuntimeInstaller
         }
         else if (!string.IsNullOrEmpty(detail.LegacyArguments))
         {
-            gameArgs.AddRange(detail.LegacyArguments.Split(' ', StringSplitOptions.RemoveEmptyEntries));
+            gameArgs.AddRange(detail.LegacyArguments.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries));
         }
 
         jvmArgs.Add($"-Djava.library.path={nativesDir}");
         jvmArgs.Add("-cp");
-        jvmArgs.Add(string.Join(Path.PathSeparator, classpath));
+        jvmArgs.Add(string.Join(Path.PathSeparator.ToString(), classpath));
 
         return new InstallReady
         {

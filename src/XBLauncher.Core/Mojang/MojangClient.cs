@@ -23,7 +23,7 @@ public sealed class MojangClient : IDisposable
     {
         _http = http ?? new HttpClient(new SocketsHttpHandler
         {
-            AutomaticDecompression = System.Net.DecompressionMethods.All,
+            AutomaticDecompression = (System.Net.DecompressionMethods.GZip | System.Net.DecompressionMethods.Deflate),
             PooledConnectionLifetime = TimeSpan.FromMinutes(5)
         })
         {
@@ -37,7 +37,7 @@ public sealed class MojangClient : IDisposable
     {
         using var resp = await _http.GetAsync(VersionManifestUrl, ct).ConfigureAwait(false);
         resp.EnsureSuccessStatusCode();
-        await using var stream = await resp.Content.ReadAsStreamAsync(ct).ConfigureAwait(false);
+        using var stream = await resp.Content.ReadAsStreamAsync(ct).ConfigureAwait(false);
         var manifest = await JsonSerializer.DeserializeAsync<VersionManifest>(stream, Json, ct)
             .ConfigureAwait(false);
         return manifest ?? throw new InvalidOperationException("Empty version manifest");
@@ -47,7 +47,7 @@ public sealed class MojangClient : IDisposable
     {
         using var resp = await _http.GetAsync(url, ct).ConfigureAwait(false);
         resp.EnsureSuccessStatusCode();
-        await using var stream = await resp.Content.ReadAsStreamAsync(ct).ConfigureAwait(false);
+        using var stream = await resp.Content.ReadAsStreamAsync(ct).ConfigureAwait(false);
         var detail = await JsonSerializer.DeserializeAsync<VersionDetail>(stream, Json, ct)
             .ConfigureAwait(false);
         return detail ?? throw new InvalidOperationException("Empty version detail");
@@ -57,7 +57,7 @@ public sealed class MojangClient : IDisposable
     {
         using var resp = await _http.GetAsync(url, ct).ConfigureAwait(false);
         resp.EnsureSuccessStatusCode();
-        await using var stream = await resp.Content.ReadAsStreamAsync(ct).ConfigureAwait(false);
+        using var stream = await resp.Content.ReadAsStreamAsync(ct).ConfigureAwait(false);
         var index = await JsonSerializer.DeserializeAsync<AssetIndex>(stream, Json, ct)
             .ConfigureAwait(false);
         return index ?? throw new InvalidOperationException("Empty asset index");

@@ -1,6 +1,7 @@
 using System;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
+using XBLauncher.UwpApp.Services;
 
 namespace XBLauncher.UwpApp.Views
 {
@@ -25,9 +26,11 @@ namespace XBLauncher.UwpApp.Views
 
         private void SettingsPage_Loaded(object sender, RoutedEventArgs e)
         {
-            NameBox.Text = "Standard";
-            RamSlider.Value = 3072;
-            RamLabel.Text = "3072 MB";
+            var profiles = AppServices.Instance.LoadProfiles();
+            var profile = profiles[0];
+            NameBox.Text = profile.Name;
+            RamSlider.Value = profile.MaxMemoryMb;
+            RamLabel.Text = profile.MaxMemoryMb + " MB";
         }
 
         private void RamSlider_ValueChanged(object sender, RangeBaseValueChangedEventArgs e)
@@ -37,6 +40,12 @@ namespace XBLauncher.UwpApp.Views
 
         private void Save_Click(object sender, RoutedEventArgs e)
         {
+            var services = AppServices.Instance;
+            var profiles = services.LoadProfiles();
+            var profile = profiles[0];
+            profile.Name = string.IsNullOrWhiteSpace(NameBox.Text) ? profile.Name : NameBox.Text;
+            profile.MaxMemoryMb = (int)RamSlider.Value;
+            services.SaveProfiles(profiles);
             _main?.SetStatus("Profil gespeichert.", 100);
         }
     }

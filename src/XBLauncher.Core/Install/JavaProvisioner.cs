@@ -18,7 +18,7 @@ public sealed class JavaProvisioner : IDisposable
     {
         _http = http ?? new HttpClient(new SocketsHttpHandler
         {
-            AutomaticDecompression = System.Net.DecompressionMethods.All
+            AutomaticDecompression = (System.Net.DecompressionMethods.GZip | System.Net.DecompressionMethods.Deflate)
         })
         {
             Timeout = TimeSpan.FromMinutes(30)
@@ -48,9 +48,9 @@ public sealed class JavaProvisioner : IDisposable
         resp.EnsureSuccessStatusCode();
 
         var zipPath = Path.Combine(Data.Store.RuntimeDir, $"jdk-{majorVersion}.zip");
-        await using (var fs = File.Create(zipPath))
+        using (var fs = File.Create(zipPath))
         {
-            await resp.Content.CopyToAsync(fs, ct).ConfigureAwait(false);
+            { using (var s = await resp.Content.ReadAsStreamAsync().ConfigureAwait(false)) { await s.CopyToAsync(fs, 81920, ct).ConfigureAwait(false); } }
         }
 
         log?.Report("Entpacke JRE...");
@@ -69,7 +69,9 @@ public sealed class JavaProvisioner : IDisposable
             if (Directory.Exists(entry))
                 Directory.Move(entry, dest);
             else
-                File.Move(entry, dest, true);
+                if (File.Exists(dest))
+                    File.Delete(dest);
+                File.Move(entry, dest);
         }
 
         Directory.Delete(tmpExtract, true);

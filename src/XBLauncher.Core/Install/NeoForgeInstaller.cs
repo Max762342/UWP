@@ -30,8 +30,8 @@ public sealed class NeoForgeInstaller : IDisposable
             var url = $"https://maven.neoforged.net/releases/net/neoforged/neoforge/{neoVersion}/neoforge-{neoVersion}-installer.jar";
             using var resp = await _http.GetAsync(url, ct).ConfigureAwait(false);
             resp.EnsureSuccessStatusCode();
-            await using var fs = File.Create(installerJar);
-            await resp.Content.CopyToAsync(fs, ct).ConfigureAwait(false);
+            using var fs = File.Create(installerJar);
+            { using (var s = await resp.Content.ReadAsStreamAsync().ConfigureAwait(false)) { await s.CopyToAsync(fs, 81920, ct).ConfigureAwait(false); } }
         }
 
         var dir = Path.Combine(Store.RuntimeDir, "neoforge", $"{minecraftVersion}-{neoVersion}");
@@ -52,19 +52,20 @@ public sealed class NeoForgeInstaller : IDisposable
             RedirectStandardError = true,
             CreateNoWindow = true
         };
-        psi.ArgumentList.Add("-jar");
-        psi.ArgumentList.Add(installerJar);
-        psi.ArgumentList.Add("--installClient");
-        psi.ArgumentList.Add(dir);
+        var neoArgs = new System.Diagnostics.CommandArguments(psi);
+        neoArgs.Add("-jar");
+        neoArgs.Add(installerJar);
+        neoArgs.Add("--installClient");
+        neoArgs.Add(dir);
 
         using var proc = System.Diagnostics.Process.Start(psi)
             ?? throw new InvalidOperationException("NeoForge-Installer konnte nicht gestartet werden");
 
         // Read stdout/stderr concurrently to avoid deadlocking when the child
         // process fills its output buffers before exiting.
-        var stdoutTask = proc.StandardOutput.ReadToEndAsync(ct);
-        var stderrTask = proc.StandardError.ReadToEndAsync(ct);
-        await proc.WaitForExitAsync(ct).ConfigureAwait(false);
+        var stdoutTask = proc.StandardOutput.ReadToEndAsync();
+        var stderrTask = proc.StandardError.ReadToEndAsync();
+        proc.WaitForExit();
         var stderr = await stderrTask.ConfigureAwait(false);
 
         if (proc.ExitCode != 0)

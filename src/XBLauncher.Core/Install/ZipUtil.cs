@@ -22,22 +22,22 @@ public static class ZipUtil
         try
         {
             var total = resp.Content.Headers.ContentLength ?? 0;
-            await using (var input = await resp.Content.ReadAsStreamAsync(ct).ConfigureAwait(false))
-            await using (var output = File.Create(tmp))
+            using (var input = await resp.Content.ReadAsStreamAsync(ct).ConfigureAwait(false))
+            using (var output = File.Create(tmp))
             {
                 var buffer = new byte[81920];
                 long read = 0;
                 int n;
-                while ((n = await input.ReadAsync(buffer, ct).ConfigureAwait(false)) > 0)
+                while ((n = await input.ReadAsync(buffer, 0, buffer.Length, ct).ConfigureAwait(false)) > 0)
                 {
-                    await output.WriteAsync(buffer.AsMemory(0, n), ct).ConfigureAwait(false);
+                    await output.WriteAsync(buffer, 0, n, ct).ConfigureAwait(false);
                     read += n;
                     if (total > 0)
                         progress?.Report((double)read / total);
                 }
             }
 
-            ZipFile.ExtractToDirectory(tmp, destDir, overwriteFiles: true);
+            ZipFileExtensions.ExtractToDirectoryOverwrite(tmp, destDir);
             progress?.Report(1.0);
         }
         finally

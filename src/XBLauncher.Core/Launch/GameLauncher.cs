@@ -48,7 +48,7 @@ public sealed class GameLauncher
         var jvmArgs = new List<string>(ready.JvmArgs);
         // classpath last so it wins over any earlier -cp
         jvmArgs.Add("-cp");
-        jvmArgs.Add(string.Join(Path.PathSeparator, classpath));
+        jvmArgs.Add(string.Join(Path.PathSeparator.ToString(), classpath));
 
         var gameArgs = ArgumentSubstitutor.Substitute(ready.GameArgs, target, profile, ready, session,
             ready.AssetsDir);

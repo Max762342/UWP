@@ -1,13 +1,20 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net10.0-windows10.0.26100.0</TargetFramework>
-    <ImplicitUsings>enable</ImplicitUsings>
-    <Nullable>enable</Nullable>
+    <!-- netstandard2.0 makes this assembly consumable from the UWP (Xbox) app,
+         which compiles with .NET Native / .NET Standard. It is API-complete for
+         everything XBLauncher.Core uses (System.Text.Json, IO.Compression, Http). -->
+    <TargetFramework>netstandard2.0</TargetFramework>
     <LangVersion>latest</LangVersion>
     <RootNamespace>XBLauncher.Core</RootNamespace>
     <AssemblyName>XBLauncher.Core</AssemblyName>
     <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+    <AllowUnsafeBlocks>false</AllowUnsafeBlocks>
   </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="System.Text.Json" Version="8.0.5" />
+    <PackageReference Include="System.Threading.Tasks.Extensions" Version="4.5.4" />
+  </ItemGroup>
 
 </Project>

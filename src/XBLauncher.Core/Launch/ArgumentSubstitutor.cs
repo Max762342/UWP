@@ -43,11 +43,24 @@ public static class ArgumentSubstitutor
 
             var s = raw;
             foreach (var (key, value) in map)
-                s = s.Replace("${" + key + "}", value, StringComparison.OrdinalIgnoreCase);
+                s = ReplaceIgnoreCase(s, "${" + key + "}", value);
 
             result.Add(s);
         }
 
         return result;
+    }
+
+    private static string ReplaceIgnoreCase(string input, string search, string replacement)
+    {
+        if (string.IsNullOrEmpty(search) || input is null)
+            return input;
+        var idx = input.IndexOf(search, StringComparison.OrdinalIgnoreCase);
+        while (idx >= 0)
+        {
+            input = input.Substring(0, idx) + replacement + input.Substring(idx + search.Length);
+            idx = input.IndexOf(search, idx + replacement.Length, StringComparison.OrdinalIgnoreCase);
+        }
+        return input;
     }
 }

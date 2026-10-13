@@ -34,8 +34,8 @@ public sealed class FabricInstaller : IDisposable
         {
             using var resp = await _http.GetAsync(InstallerUrl, ct).ConfigureAwait(false);
             resp.EnsureSuccessStatusCode();
-            await using var fs = File.Create(installerJar);
-            await resp.Content.CopyToAsync(fs, ct).ConfigureAwait(false);
+            using var fs = File.Create(installerJar);
+            { using (var s = await resp.Content.ReadAsStreamAsync().ConfigureAwait(false)) { await s.CopyToAsync(fs, 81920, ct).ConfigureAwait(false); } }
         }
 
         // Fabric installer supports "-d <dir> -mcversion -loader -downloadMinecraft false"
@@ -58,27 +58,28 @@ public sealed class FabricInstaller : IDisposable
             RedirectStandardError = true,
             CreateNoWindow = true
         };
-        psi.ArgumentList.Add("-jar");
-        psi.ArgumentList.Add(installerJar);
-        psi.ArgumentList.Add("client");
-        psi.ArgumentList.Add("-dir");
-        psi.ArgumentList.Add(fabricDir);
-        psi.ArgumentList.Add("-mcversion");
-        psi.ArgumentList.Add(minecraftVersion);
-        psi.ArgumentList.Add("-loader");
-        psi.ArgumentList.Add(loaderVersion);
-        psi.ArgumentList.Add("-downloadMinecraft");
-        psi.ArgumentList.Add("false");
-        psi.ArgumentList.Add("-noprofile");
+        var fabArgs = new System.Diagnostics.CommandArguments(psi);
+        fabArgs.Add("-jar");
+        fabArgs.Add(installerJar);
+        fabArgs.Add("client");
+        fabArgs.Add("-dir");
+        fabArgs.Add(fabricDir);
+        fabArgs.Add("-mcversion");
+        fabArgs.Add(minecraftVersion);
+        fabArgs.Add("-loader");
+        fabArgs.Add(loaderVersion);
+        fabArgs.Add("-downloadMinecraft");
+        fabArgs.Add("false");
+        fabArgs.Add("-noprofile");
 
         using var proc = System.Diagnostics.Process.Start(psi)
             ?? throw new InvalidOperationException("Fabric-Installer konnte nicht gestartet werden");
 
         // Read stdout/stderr concurrently to avoid deadlocking when the child
         // process fills its output buffers before exiting.
-        var stdoutTask = proc.StandardOutput.ReadToEndAsync(ct);
-        var stderrTask = proc.StandardError.ReadToEndAsync(ct);
-        await proc.WaitForExitAsync(ct).ConfigureAwait(false);
+        var stdoutTask = proc.StandardOutput.ReadToEndAsync();
+        var stderrTask = proc.StandardError.ReadToEndAsync();
+        proc.WaitForExit();
         var stderr = await stderrTask.ConfigureAwait(false);
 
         if (proc.ExitCode != 0)

@@ -5,6 +5,7 @@ using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
 using Windows.UI.Xaml.Input;
 using XBLauncher.Core.Data;
+using XBLauncher.UwpApp.Services;
 
 namespace XBLauncher.UwpApp.Views
 {
@@ -36,21 +37,8 @@ namespace XBLauncher.UwpApp.Views
 
         private void LoadData()
         {
-            // Load profiles
-            _profiles = XBLauncher.Core.Data.Store.Load(
-                XBLauncher.Core.Data.Store.ProfilesPath, 
-                () => new List<Profile>());
-
-            if (_profiles.Count == 0)
-            {
-                _profiles.Add(new Profile
-                {
-                    Id = Guid.NewGuid().ToString("N"),
-                    Name = "Standard",
-                    TargetId = "fabric-1.21.11",
-                    MaxMemoryMb = 3072
-                });
-            }
+            // Load profiles via the shared service (creates a default if empty).
+            _profiles = AppServices.Instance.LoadProfiles();
 
             // Load targets
             _targets = XBLauncher.Core.Data.TargetCatalog.Build().ToList();
@@ -63,6 +51,9 @@ namespace XBLauncher.UwpApp.Views
             TargetBox.SelectedIndex = 0;
 
             VersionList.ItemsSource = _targets;
+
+            if (AppServices.Instance.Session != null)
+                LoginButton.Content = "Angemeldet ✓";
 
             _main?.SetStatus("Bereit.", 0);
         }
@@ -95,6 +86,7 @@ namespace XBLauncher.UwpApp.Views
             };
 
             _profiles.Add(newProfile);
+            AppServices.Instance.SaveProfiles(_profiles);
             ProfileBox.ItemsSource = _profiles.Select(p => p.Name).ToList();
             ProfileBox.SelectedIndex = _profiles.Count - 1;
             _main?.SetStatus($"Profil \"{newProfile.Name}\" erstellt.", 0);
@@ -121,13 +113,50 @@ namespace XBLauncher.UwpApp.Views
                     return;
                 }
 
+                var services = AppServices.Instance;
+
+                // Auth gate: a real session that owns the game is required to launch.
+                if (services.Session is null)
+                {
+                    _main?.SetStatus("Anmeldung erforderlich...", 5);
+                    if (!await EnsureSignedInAsync())
+                    {
+                        _main?.SetStatus("Abgebrochen – bitte anmelden.", 0);
+                        return;
+                    }
+                }
+
                 var target = _targets[TargetBox.SelectedIndex];
-                _main?.SetStatus($"Starte Minecraft {target.DisplayName}...", 30);
+                var profile = _profiles[ProfileBox.SelectedIndex >= 0 ? ProfileBox.SelectedIndex : 0];
 
-                // Simuliere Ladevorgang
-                await System.Threading.Tasks.Task.Delay(1000);
+                _main?.SetStatus($"Installiere Minecraft {target.DisplayName}...", 10);
 
-                _main?.SetStatus("Hinweis: Spielstart benötigt die native App. Konfiguration wurde gespeichert.", 100);
+                var progress = new Progress<XBLauncher.Core.Launch.InstallProgress>(p =>
+                    _main?.SetStatus($"{p.Stage}: {p.Detail}", 10 + p.Fraction * 80));
+
+                // Downloads client, assets, libraries, natives and returns the launch templates.
+                var ready = await services.Installer.EnsureInstalledAsync(target, profile, progress);
+
+                _main?.SetStatus($"Starte Minecraft {target.DisplayName}...", 95);
+
+                var plan = await services.Launcher.BuildPlanAsync(target, profile, services.Session, progress);
+
+                // On Xbox the AppContainer blocks spawning the Win32 java.exe, so this
+                // step reports a clear, actionable error instead of a cryptic 0x80070002.
+                try
+                {
+                    var logFile = System.IO.Path.Combine(XBLauncher.Core.Data.Store.LogsDir,
+                        $"launch-{DateTime.Now:yyyyMMdd-HHmmss}.log");
+                    var proc = XBLauncher.Core.Launch.GameProcess.Start(plan, logFile);
+                    _main?.SetStatus($"Minecraft läuft (PID {proc.Id}). Log: {logFile}", 100);
+                }
+                catch (Exception launchEx)
+                {
+                    _main?.SetStatus(
+                        "Spiel konnte nicht gestartet werden. Auf Xbox ist das Starten von Java (Win32) " +
+                        "durch die AppContainer-Sandbox blockiert. Installation und Konfiguration sind OK. " +
+                        "Details: " + launchEx.Message, 100);
+                }
             }
             catch (Exception ex)
             {
@@ -136,6 +165,35 @@ namespace XBLauncher.UwpApp.Views
             finally
             {
                 PlayButton.IsEnabled = true;
+            }
+        }
+
+        private async System.Threading.Tasks.Task<bool> EnsureSignedInAsync()
+        {
+            // Navigate to the login dialog and wait for it to complete.
+            var tcs = new System.Threading.Tasks.TaskCompletionSource<bool>();
+            Frame.Navigated += OnLoginNavigatedBack;
+
+            void OnLoginNavigatedBack(object sender, Windows.UI.Xaml.Navigation.NavigationEventArgs e)
+            {
+                if (e.SourcePageType == typeof(PlayPage))
+                {
+                    Frame.Navigated -= OnLoginNavigatedBack;
+                    tcs.TrySetResult(AppServices.Instance.Session != null);
+                }
+            }
+
+            Frame.Navigate(typeof(LoginDialog));
+            return await tcs.Task;
+        }
+
+        private async void Login_Click(object sender, RoutedEventArgs e)
+        {
+            await EnsureSignedInAsync();
+            if (AppServices.Instance.Session != null)
+            {
+                LoginButton.Content = "Angemeldet ✓";
+                _main?.SetStatus($"Angemeldet als {AppServices.Instance.Session.PlayerName}.", 100);
             }
         }
     }

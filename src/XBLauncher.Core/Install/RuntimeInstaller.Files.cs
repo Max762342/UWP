@@ -1,4 +1,4 @@
-﻿using System.Text.Json;
+using System.Text.Json;
 using XBLauncher.Core.Mojang;
 
 namespace XBLauncher.Core.Install;
@@ -26,16 +26,16 @@ public sealed partial class RuntimeInstaller
             .ConfigureAwait(false);
         resp.EnsureSuccessStatusCode();
 
-        await using (var input = await resp.Content.ReadAsStreamAsync(ct).ConfigureAwait(false))
-        await using (var output = File.Create(destPath))
+        using (var input = await resp.Content.ReadAsStreamAsync(ct).ConfigureAwait(false))
+        using (var output = File.Create(destPath))
         {
-            await input.CopyToAsync(output, ct).ConfigureAwait(false);
+            await input.CopyToAsync(output, 81920, ct).ConfigureAwait(false);
         }
 
         if (!string.IsNullOrEmpty(artifact.Sha1) && !VerifySha1(destPath, artifact.Sha1))
         {
             File.Delete(destPath);
-            throw new InvalidDataException($"SHA1-Mismatch fÃ¼r {label}");
+            throw new InvalidDataException($"SHA1-Mismatch für {label}");
         }
     }
 
@@ -43,7 +43,7 @@ public sealed partial class RuntimeInstaller
     {
         using var sha = System.Security.Cryptography.SHA1.Create();
         using var stream = File.OpenRead(path);
-        var actual = Convert.ToHexString(sha.ComputeHash(stream)).ToLowerInvariant();
+        var actual = BitConverter.ToString(sha.ComputeHash(stream)).Replace("-", "").ToLowerInvariant();
         return string.Equals(actual, expected, StringComparison.OrdinalIgnoreCase);
     }
 
@@ -61,7 +61,7 @@ public sealed partial class RuntimeInstaller
         AssetIndex index;
         try
         {
-            await using (var stream = File.OpenRead(indexFile))
+            using (var stream = File.OpenRead(indexFile))
             {
                 index = await JsonSerializer.DeserializeAsync<AssetIndex>(stream, Json, ct)
                             .ConfigureAwait(false) ?? new AssetIndex();
@@ -88,7 +88,7 @@ public sealed partial class RuntimeInstaller
             if (string.IsNullOrEmpty(obj.Hash) || obj.Hash.Length < 2)
                 continue;
 
-            var prefix = obj.Hash[..2].ToLowerInvariant();
+            var prefix = obj.Hash.Substring(0, 2).ToLowerInvariant();
             var destPath = Path.Combine(objectsDir, prefix, obj.Hash.ToLowerInvariant());
 
             if (File.Exists(destPath))
@@ -117,7 +117,7 @@ public sealed partial class RuntimeInstaller
                 // game can still run and will re-fetch on demand.
                 progress?.Report(new XBLauncher.Core.Launch.InstallProgress("assets",
                     0.12 + 0.55 * done / Math.Max(1, total),
-                    $"Asset übersprungen: {name} ({ex.Message})"));
+                    $"Asset �bersprungen: {name} ({ex.Message})"));
             }
 
             done++;

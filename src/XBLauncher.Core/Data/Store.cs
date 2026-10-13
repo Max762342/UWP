@@ -20,8 +20,31 @@ public static class Store
 
     private static readonly object Gate = new();
 
-    public static string RootDir { get; } =
-        Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "XB-Launcher");
+    private static string ResolveRootDir()
+    {
+        // Under UWP/AppContainer (Xbox) the writable location is the package
+        // LocalFolder. Resolve it via reflection so this netstandard2.0 assembly
+        // does not take a hard dependency on Windows.winmd; fall back to
+        // %LOCALAPPDATA% on desktop.
+        try
+        {
+            var t = Type.GetType("Windows.Storage.ApplicationData, Windows, ContentType=WindowsRuntime");
+            var current = t?.GetProperty("Current")?.GetValue(null);
+            var local = current?.GetType().GetProperty("LocalFolder")?.GetValue(current);
+            var path = local?.GetType().GetProperty("Path")?.GetValue(local) as string;
+            if (!string.IsNullOrEmpty(path))
+                return Path.Combine(path, "XB-Launcher");
+        }
+        catch
+        {
+            // Not running under UWP – fall through to the desktop path.
+        }
+
+        return Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "XB-Launcher");
+    }
+
+    public static string RootDir { get; } = ResolveRootDir();
 
     public static string ProfilesPath => Path.Combine(RootDir, "profiles.json");
     public static string SettingsPath => Path.Combine(RootDir, "settings.json");

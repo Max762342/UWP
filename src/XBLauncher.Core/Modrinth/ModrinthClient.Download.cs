@@ -1,5 +1,4 @@
 using System.Text.Json;
-using System.Web;
 
 namespace XBLauncher.Core.Modrinth;
 
@@ -27,18 +26,21 @@ public sealed partial class ModrinthClient
         if (hub == HubKind.Mods && !string.IsNullOrWhiteSpace(loader))
             facets.Add($"[\"categories:{loader}\"]");
 
-        var qs = HttpUtility.ParseQueryString(string.Empty);
-        qs["facets"] = "[" + string.Join(",", facets) + "]";
-        qs["limit"] = limit.ToString();
-        qs["offset"] = offset.ToString();
-        qs["index"] = string.IsNullOrWhiteSpace(query) ? "downloads" : "relevance";
-        if (!string.IsNullOrWhiteSpace(query))
-            qs["query"] = query;
+        var qs = new List<string>();
+        void AddParam(string key, string value) =>
+            qs.Add(Uri.EscapeDataString(key) + "=" + Uri.EscapeDataString(value));
 
-        var url = $"https://api.modrinth.com/v2/search?{qs}";
+        AddParam("facets", "[" + string.Join(",", facets) + "]");
+        AddParam("limit", limit.ToString());
+        AddParam("offset", offset.ToString());
+        AddParam("index", string.IsNullOrWhiteSpace(query) ? "downloads" : "relevance");
+        if (!string.IsNullOrWhiteSpace(query))
+            AddParam("query", query);
+
+        var url = "https://api.modrinth.com/v2/search?" + string.Join("&", qs);
         using var resp = await _http.GetAsync(url, ct).ConfigureAwait(false);
         resp.EnsureSuccessStatusCode();
-        await using var stream = await resp.Content.ReadAsStreamAsync(ct).ConfigureAwait(false);
+        using var stream = await resp.Content.ReadAsStreamAsync(ct).ConfigureAwait(false);
         var result = await JsonSerializer.DeserializeAsync<ModrinthSearchResponse>(stream, Json, ct)
             .ConfigureAwait(false);
         return result ?? new ModrinthSearchResponse();
@@ -52,7 +54,7 @@ public sealed partial class ModrinthClient
         var url = $"https://api.modrinth.com/v2/project/{Uri.EscapeDataString(projectId)}/version";
         using var resp = await _http.GetAsync(url, ct).ConfigureAwait(false);
         resp.EnsureSuccessStatusCode();
-        await using var stream = await resp.Content.ReadAsStreamAsync(ct).ConfigureAwait(false);
+        using var stream = await resp.Content.ReadAsStreamAsync(ct).ConfigureAwait(false);
         var versions = await JsonSerializer.DeserializeAsync<List<ModrinthVersion>>(stream, Json, ct)
             .ConfigureAwait(false);
         return versions ?? new List<ModrinthVersion>();
