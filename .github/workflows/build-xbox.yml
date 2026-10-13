@@ -35,11 +35,12 @@ jobs:
           /restore /m /v:m /bl:output/uwp.binlog 2>&1 | Tee-Object -FilePath output/uwp-build.log
         $code = $LASTEXITCODE
         $tail = Get-Content output/uwp-build.log -Tail 200 -ErrorAction SilentlyContinue
+        $fence = [string]::new([char]96, 3)
         $sb = New-Object System.Text.StringBuilder
-        [void]$sb.AppendLine("## UWP build log (tail)")
-        [void]$sb.AppendLine("```")
+        [void]$sb.AppendLine('## UWP build log (tail)')
+        [void]$sb.AppendLine($fence)
         foreach ($line in $tail) { [void]$sb.AppendLine($line) }
-        [void]$sb.AppendLine("```")
+        [void]$sb.AppendLine($fence)
         Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value $sb.ToString()
         if ($code -ne 0) { throw "UWP build failed (exit $code). See summary for the error tail." }
 
