@@ -34,7 +34,7 @@ jobs:
           -KeyExportPolicy Exportable `
           -FriendlyName "XB-Launcher Dev Cert" `
           -CertStoreLocation "Cert:\CurrentUser\My" `
-          -TextExtension @("2.5.29.37={text}1.3.6.1.5.5.7.3.3", "2.5.29.19={text}")
+          -TextExtension @("2.5.29.19={text}ca=false", "2.5.29.37={text}1.3.6.1.5.5.7.3.3", "2.5.29.14={hex}00")
         Export-PfxCertificate -Cert $cert -FilePath output/XB-Launcher.pfx -Password $certPwd | Out-Null
         $thumb = $cert.Thumbprint
         "thumb=$thumb" >> $env:GITHUB_OUTPUT
@@ -47,6 +47,10 @@ jobs:
         $ErrorActionPreference = "Continue"
         New-Item -ItemType Directory -Force -Path output | Out-Null
         Write-Host "MSBuild: $((Get-Command msbuild).Source)"
+        # Absolute path: MSBuild resolves PackageCertificateKeyFile relative to the
+        # project dir, so a repo-root-relative path would not be found.
+        $pfx = (Resolve-Path output/XB-Launcher.pfx).Path
+        Write-Host "PFX: $pfx"
         # MSBuild performs the .NET Native compile AND signs the appx itself,
         # which avoids the standalone-signtool 0x8007000b appx-format error.
         msbuild src/XBLauncher.UwpApp/XBLauncher.UwpApp.csproj `
@@ -55,7 +59,7 @@ jobs:
           /p:AppxBundle=Never `
           /p:UapAppxPackageBuildMode=SideloadOnly `
           /p:AppxPackageSigningEnabled=true `
-          /p:PackageCertificateKeyFile=output/XB-Launcher.pfx `
+          /p:PackageCertificateKeyFile=$pfx `
           /p:PackageCertificatePassword=xblauncher `
           /p:AppxPackageSigningTimestampDigestAlgorithm=SHA256 `
           /restore /m /v:m /bl:output/uwp.binlog 2>&1 | Tee-Object -FilePath output/uwp-build.log
