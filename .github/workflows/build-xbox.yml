@@ -19,19 +19,45 @@ jobs:
     - name: Setup NuGet
       uses: nuget/setup-nuget@v2
 
-    - name: Restore + Build UWP (Release x64)
+    - name: Create Certificate
+      shell: pwsh
+      run: |
+        New-Item -ItemType Directory -Force -Path output | Out-Null
+        $certPwd = ConvertTo-SecureString -String "xblauncher" -Force -AsPlainText
+        $cert = New-SelfSignedCertificate `
+          -Type Custom `
+          -Subject "CN=XB-Launcher" `
+          -KeyUsage DigitalSignature `
+          -KeyAlgorithm RSA `
+          -KeyLength 2048 `
+          -KeySpec Signature `
+          -KeyExportPolicy Exportable `
+          -FriendlyName "XB-Launcher Dev Cert" `
+          -CertStoreLocation "Cert:\CurrentUser\My" `
+          -TextExtension @("2.5.29.37={text}1.3.6.1.5.5.7.3.3", "2.5.29.19={text}")
+        Export-PfxCertificate -Cert $cert -FilePath output/XB-Launcher.pfx -Password $certPwd | Out-Null
+        $thumb = $cert.Thumbprint
+        "thumb=$thumb" >> $env:GITHUB_OUTPUT
+        Write-Host "Cert thumbprint: $thumb"
+      id: cert
+
+    - name: Restore + Build + Package UWP (Release x64, signed)
       shell: pwsh
       run: |
         $ErrorActionPreference = "Continue"
         New-Item -ItemType Directory -Force -Path output | Out-Null
         Write-Host "MSBuild: $((Get-Command msbuild).Source)"
-        # msbuild /restore handles ProjectReference + PackageReference together.
+        # MSBuild performs the .NET Native compile AND signs the appx itself,
+        # which avoids the standalone-signtool 0x8007000b appx-format error.
         msbuild src/XBLauncher.UwpApp/XBLauncher.UwpApp.csproj `
           /t:Restore,Build `
           /p:Configuration=Release /p:Platform=x64 `
           /p:AppxBundle=Never `
           /p:UapAppxPackageBuildMode=SideloadOnly `
-          /p:AppxPackageSigningEnabled=false `
+          /p:AppxPackageSigningEnabled=true `
+          /p:PackageCertificateKeyFile=output/XB-Launcher.pfx `
+          /p:PackageCertificatePassword=xblauncher `
+          /p:AppxPackageSigningTimestampDigestAlgorithm=SHA256 `
           /restore /m /v:m /bl:output/uwp.binlog 2>&1 | Tee-Object -FilePath output/uwp-build.log
         $code = $LASTEXITCODE
         $tail = Get-Content output/uwp-build.log -Tail 200 -ErrorAction SilentlyContinue
@@ -78,29 +104,6 @@ jobs:
         New-Item -ItemType Directory -Force -Path output | Out-Null
         Copy-Item $appx.FullName "output/XB-Launcher-UWP.appx" -Force
         "appx=output/XB-Launcher-UWP.appx" >> $env:GITHUB_OUTPUT
-
-    - name: Create Certificate
-      shell: pwsh
-      run: |
-        $certPwd = ConvertTo-SecureString -String "xblauncher" -Force -AsPlainText
-        $cert = New-SelfSignedCertificate `
-          -Type Custom `
-          -Subject "CN=XB-Launcher" `
-          -KeyUsage DigitalSignature `
-          -KeyAlgorithm RSA `
-          -KeyLength 2048 `
-          -KeySpec Signature `
-          -KeyExportPolicy Exportable `
-          -Provider "Microsoft Enhanced RSA and AES Cryptographic Provider" `
-          -FriendlyName "XB-Launcher Dev Cert" `
-          -CertStoreLocation "Cert:\CurrentUser\My" `
-          -TextExtension @("2.5.29.37={text}1.3.6.1.5.5.7.3.3", "2.5.29.19={text}")
-        Export-PfxCertificate -Cert $cert -FilePath output/XB-Launcher.pfx -Password $certPwd | Out-Null
-
-    - name: Sign APPX
-      shell: pwsh
-      run: |
-        & "${{ steps.sdk.outputs.signtool }}" sign /f output/XB-Launcher.pfx /p "xblauncher" /fd SHA256 /td SHA256 output/XB-Launcher-UWP.appx
 
     - name: Upload Artifact
       uses: actions/upload-artifact@v4
