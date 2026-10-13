@@ -7,7 +7,7 @@
 
   <Identity Name="XBLauncher" Publisher="CN=XB-Launcher" Version="1.0.2.0" ProcessorArchitecture="x64" />
 
-  <mp:PhoneIdentity PhoneProductId="9f2b1c3a-4d5e-4a6b-8c7d-0e1f2a3b4c5d" PhonePublisherId="00000000-0000-0000-0000-000000000000" />
+  <mp:PhoneIdentity PhoneProductId="9f2b1c3a-4d5e-4a6b-8c7d-0e1f2a3b4c5d" PhonePublisherId="1a2b3c4d-5e6f-4a7b-8c9d-0e1f2a3b4c5d" />
 
   <Properties>
     <DisplayName>XB-Launcher</DisplayName>
