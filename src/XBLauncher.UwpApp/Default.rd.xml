@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Runtime Directives for .NET Native. System.Text.Json and the launcher data
+  models are serialized/deserialized via reflection, so the types below must be
+  preserved and their members kept open for the .NET Native optimizer.
+-->
+<Directives xmlns="http://schemas.microsoft.com/netfx/2013/01/metadata">
+  <Application>
+    <Assembly Name="XBLauncher.Core" Dynamic="Required All" />
+    <Type Name="XBLauncher.Core.Data.Profile" Dynamic="Required All" />
+    <Type Name="XBLauncher.Core.Data.LaunchTarget" Dynamic="Required All" />
+    <Type Name="XBLauncher.Core.Data.LauncherSettings" Dynamic="Required All" />
+    <Type Name="XBLauncher.Core.Data.LoaderKind" Dynamic="Required All" />
+    <Type Name="XBLauncher.Core.Auth.MinecraftSession" Dynamic="Required All" />
+    <Type Name="XBLauncher.Core.Auth.DeviceCodeResponse" Dynamic="Required All" />
+    <Type Name="XBLauncher.Core.Auth.TokenResponse" Dynamic="Required All" />
+    <Type Name="XBLauncher.Core.Modrinth.ModrinthSearchResponse" Dynamic="Required All" />
+    <Type Name="XBLauncher.Core.Modrinth.ModrinthProject" Dynamic="Required All" />
+    <Type Name="XBLauncher.Core.Modrinth.ModrinthVersion" Dynamic="Required All" />
+    <Type Name="XBLauncher.Core.Modrinth.ModrinthFile" Dynamic="Required All" />
+    <Type Name="XBLauncher.Core.Mojang.VersionManifest" Dynamic="Required All" />
+    <Type Name="XBLauncher.Core.Mojang.VersionDetail" Dynamic="Required All" />
+    <Type Name="XBLauncher.Core.Mojang.Library" Dynamic="Required All" />
+    <Type Name="XBLauncher.Core.Mojang.AssetIndex" Dynamic="Required All" />
+  </Application>
+</Directives>
