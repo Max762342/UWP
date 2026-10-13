@@ -21,10 +21,10 @@ public enum LoaderKind
 /// </summary>
 public sealed class LaunchTarget
 {
-    public required string Id { get; init; }
-    public required string MinecraftVersion { get; init; }
-    public required LoaderKind Loader { get; init; }
-    public string? LoaderVersion { get; init; }
+    public string Id { get; set; } = "";
+    public string MinecraftVersion { get; set; } = "";
+    public LoaderKind Loader { get; set; }
+    public string? LoaderVersion { get; set; }
     public string DisplayName => Loader == LoaderKind.Vanilla
         ? MinecraftVersion
         : $"{MinecraftVersion} + {Loader} {LoaderVersion}".Trim();
@@ -36,9 +36,9 @@ public sealed class LaunchTarget
 /// </summary>
 public sealed class Profile
 {
-    public required string Id { get; init; }
-    public required string Name { get; set; }
-    public required string TargetId { get; set; }
+    public string Id { get; set; } = "";
+    public string Name { get; set; } = "";
+    public string TargetId { get; set; } = "";
     public int MaxMemoryMb { get; set; } = 3072;
     public string? JvmArgs { get; set; }
     public string? GameDirName { get; set; }

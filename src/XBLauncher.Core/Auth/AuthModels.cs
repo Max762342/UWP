@@ -11,11 +11,11 @@ namespace XBLauncher.Core.Auth;
 /// </summary>
 public sealed class MinecraftSession
 {
-    public required string PlayerName { get; init; }
-    public required string Uuid { get; init; }
-    public required string AccessToken { get; init; }
-    public required DateTimeOffset ExpiresAt { get; init; }
-    public bool OwnsJavaEdition { get; init; }
+    public string PlayerName { get; set; } = "";
+    public string Uuid { get; set; } = "";
+    public string AccessToken { get; set; } = "";
+    public DateTimeOffset ExpiresAt { get; set; }
+    public bool OwnsJavaEdition { get; set; }
 }
 
 /// <summary>
@@ -23,8 +23,8 @@ public sealed class MinecraftSession
 /// </summary>
 public sealed class OwnershipResult
 {
-    public bool OwnsJavaEdition { get; init; }
-    public string? Detail { get; init; }
+    public bool OwnsJavaEdition { get; set; }
+    public string? Detail { get; set; }
 }
 
 // ---- JSON DTOs for Microsoft / Minecraft Services ----

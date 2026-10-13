@@ -7,16 +7,16 @@ namespace XBLauncher.Core.Launch;
 /// </summary>
 public sealed class LaunchPlan
 {
-    public required string JavaExe { get; init; }
-    public required string WorkingDirectory { get; init; }
-    public required List<string> Arguments { get; init; }
-    public required List<string> GameArgs { get; init; }
-    public required Dictionary<string, string> EnvironmentVariables { get; init; }
-    public required string MainClass { get; init; }
-    public string? AccessToken { get; init; }
-    public string? PlayerName { get; init; }
-    public string? Uuid { get; init; }
-    public int MaxMemoryMb { get; init; } = 3072;
+    public string JavaExe { get; set; } = "";
+    public string WorkingDirectory { get; set; } = "";
+    public List<string> Arguments { get; set; } = new();
+    public List<string> GameArgs { get; set; } = new();
+    public Dictionary<string, string> EnvironmentVariables { get; set; } = new();
+    public string MainClass { get; set; } = "";
+    public string? AccessToken { get; set; }
+    public string? PlayerName { get; set; }
+    public string? Uuid { get; set; }
+    public int MaxMemoryMb { get; set; } = 3072;
 }
 
 /// <summary>
@@ -35,15 +35,15 @@ public interface IRuntimeInstaller
 
 public sealed class InstallReady
 {
-    public required string GameDir { get; init; }
-    public required string NativesDir { get; init; }
-    public required List<string> Classpath { get; init; }
-    public required string MainClass { get; init; }
-    public required List<string> JvmArgs { get; init; }
-    public required List<string> GameArgs { get; init; }
-    public required string AssetsDir { get; init; }
-    public required string AssetIndexId { get; init; }
-    public int JavaMajor { get; init; } = 21;
+    public string GameDir { get; set; } = "";
+    public string NativesDir { get; set; } = "";
+    public List<string> Classpath { get; set; } = new();
+    public string MainClass { get; set; } = "";
+    public List<string> JvmArgs { get; set; } = new();
+    public List<string> GameArgs { get; set; } = new();
+    public string AssetsDir { get; set; } = "";
+    public string AssetIndexId { get; set; } = "";
+    public int JavaMajor { get; set; } = 21;
 }
 
 public sealed record InstallProgress(string Stage, double Fraction, string Detail);
