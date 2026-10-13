@@ -24,6 +24,7 @@ jobs:
       run: |
         $ErrorActionPreference = "Continue"
         New-Item -ItemType Directory -Force -Path output | Out-Null
+        Write-Host "MSBuild: $((Get-Command msbuild).Source)"
         # msbuild /restore handles ProjectReference + PackageReference together.
         msbuild src/XBLauncher.UwpApp/XBLauncher.UwpApp.csproj `
           /t:Restore,Build `
@@ -33,9 +34,7 @@ jobs:
           /p:AppxPackageSigningEnabled=false `
           /restore /m /v:m /bl:output/uwp.binlog 2>&1 | Tee-Object -FilePath output/uwp-build.log
         $code = $LASTEXITCODE
-        # Surface the tail of the log in the job summary so failures are readable
-        # from the Actions UI without downloading the full log.
-        $tail = Get-Content output/uwp-build.log -Tail 160 -ErrorAction SilentlyContinue
+        $tail = Get-Content output/uwp-build.log -Tail 200 -ErrorAction SilentlyContinue
         $sb = New-Object System.Text.StringBuilder
         [void]$sb.AppendLine("## UWP build log (tail)")
         [void]$sb.AppendLine("```")
@@ -43,6 +42,16 @@ jobs:
         [void]$sb.AppendLine("```")
         Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value $sb.ToString()
         if ($code -ne 0) { throw "UWP build failed (exit $code). See summary for the error tail." }
+
+    - name: Upload build logs (always)
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: uwp-build-logs
+        path: |
+          output/uwp-build.log
+          output/uwp.binlog
+        retention-days: 5
 
     - name: Locate makeappx / signtool
       id: sdk

@@ -114,6 +114,9 @@
       <Project>{B2C3D4E5-F6A7-8901-BCDE-F12345678901}</Project>
       <Name>XBLauncher.Core</Name>
     </ProjectReference>
+    <PackageReference Include="Microsoft.NETCore.UniversalWindowsPlatform">
+      <Version>6.2.14</Version>
+    </PackageReference>
     <PackageReference Include="System.Text.Json">
       <Version>8.0.5</Version>
     </PackageReference>
