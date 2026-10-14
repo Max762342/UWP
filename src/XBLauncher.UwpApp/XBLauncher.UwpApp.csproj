@@ -62,6 +62,11 @@
     <Content Include="Assets\StoreLogo.png" />
     <Content Include="Assets\Wide310x150Logo.png" />
     <Content Include="Assets\Wide310x150Logo.scale-200.png" />
+    <!-- Native JVM-embed bridge compiled by CI before the UWP build. -->
+    <Content Include="..\..\native\xb_jvm\xb_jvm.dll">
+      <Link>xb_jvm.dll</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
   </ItemGroup>
   <ItemGroup>
     <ApplicationDefinition Include="App.xaml">

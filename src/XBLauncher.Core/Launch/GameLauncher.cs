@@ -59,6 +59,8 @@ public sealed class GameLauncher
         {
             JavaExe = javaExe,
             WorkingDirectory = ready.GameDir,
+            Classpath = string.Join(Path.PathSeparator.ToString(), classpath),
+            NativesDir = ready.NativesDir,
             Arguments = jvmArgs,
             GameArgs = gameArgs,
             MainClass = ready.MainClass,

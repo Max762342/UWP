@@ -1,0 +1,6 @@
+LIBRARY xb_jvm
+EXPORTS
+    XbBridgeVersion
+    XbIsGameRunning
+    XbRequestStop
+    XbLaunchGame

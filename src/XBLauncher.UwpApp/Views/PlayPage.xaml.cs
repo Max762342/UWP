@@ -141,21 +141,33 @@ namespace XBLauncher.UwpApp.Views
 
                 var plan = await services.Launcher.BuildPlanAsync(target, profile, services.Session, progress);
 
-                // On Xbox the AppContainer blocks spawning the Win32 java.exe, so this
-                // step reports a clear, actionable error instead of a cryptic 0x80070002.
+                // Launch: on Xbox the AppContainer blocks CreateProcess(java.exe), so
+                // we embed the JVM in-process via the xb_jvm JNI bridge (same trick
+                // that lets Minecraft Java run on Xbox). Falls back to the desktop
+                // child-process path when the bridge is unavailable.
                 try
                 {
                     var logFile = System.IO.Path.Combine(XBLauncher.Core.Data.Store.LogsDir,
                         $"launch-{DateTime.Now:yyyyMMdd-HHmmss}.log");
-                    var proc = XBLauncher.Core.Launch.GameProcess.Start(plan, logFile);
-                    _main?.SetStatus($"Minecraft läuft (PID {proc.Id}). Log: {logFile}", 100);
+
+                    if (XBLauncher.Core.Java.EmbeddedGameHost.BridgeAvailable())
+                    {
+                        _main?.SetStatus("Starte eingebettete JVM (Xbox-Modus)...", 96);
+                        var rc = await XBLauncher.Core.Launch.GameProcess.StartEmbedded(plan, logFile);
+                        if (rc == 0)
+                            _main?.SetStatus($"Minecraft beendet. Log: {logFile}", 100);
+                        else
+                            _main?.SetStatus($"JVM-Start fehlgeschlagen (Code {rc}). Log: {logFile}", 100);
+                    }
+                    else
+                    {
+                        var proc = XBLauncher.Core.Launch.GameProcess.Start(plan, logFile);
+                        _main?.SetStatus($"Minecraft läuft (PID {proc.Id}). Log: {logFile}", 100);
+                    }
                 }
                 catch (Exception launchEx)
                 {
-                    _main?.SetStatus(
-                        "Spiel konnte nicht gestartet werden. Auf Xbox ist das Starten von Java (Win32) " +
-                        "durch die AppContainer-Sandbox blockiert. Installation und Konfiguration sind OK. " +
-                        "Details: " + launchEx.Message, 100);
+                    _main?.SetStatus("Spielstart fehlgeschlagen: " + launchEx.Message, 100);
                 }
             }
             catch (Exception ex)

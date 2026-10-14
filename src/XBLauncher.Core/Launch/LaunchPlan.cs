@@ -9,6 +9,8 @@ public sealed class LaunchPlan
 {
     public string JavaExe { get; set; } = "";
     public string WorkingDirectory { get; set; } = "";
+    public string Classpath { get; set; } = "";
+    public string NativesDir { get; set; } = "";
     public List<string> Arguments { get; set; } = new();
     public List<string> GameArgs { get; set; } = new();
     public Dictionary<string, string> EnvironmentVariables { get; set; } = new();

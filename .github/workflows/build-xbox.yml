@@ -16,8 +16,36 @@ jobs:
     - name: Add MSBuild to PATH
       uses: microsoft/setup-msbuild@v2
 
+    - name: Setup JDK (for JNI headers + jvm.lib)
+      uses: actions/setup-java@v4
+      with:
+        distribution: 'temurin'
+        java-version: '21'
+
     - name: Setup NuGet
       uses: nuget/setup-nuget@v2
+
+    - name: Build native JVM bridge (xb_jvm.dll)
+      shell: pwsh
+      run: |
+        # Find MSVC cl.exe and a JDK (for jni.h + jvm.lib).
+        $vswhere = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"
+        $vs = & $vswhere -latest -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath
+        $vcvars = Join-Path $vs "VC\Auxiliary\Build\vcvars64.bat"
+        # Locate a JDK on the runner (setup-java installs one).
+        $jdk = $env:JAVA_HOME
+        if (-not $jdk) { $jdk = (Get-ChildItem "C:\hostedtoolcache\windows\Java_*" -Directory -ErrorAction SilentlyContinue | Select-Object -Last 1).FullName }
+        if (-not $jdk) { $jdk = (Get-ChildItem "C:\Program Files\Java","C:\Program Files\Eclipse Adoptium","C:\Program Files\Microsoft" -Directory -ErrorAction SilentlyContinue | Where-Object { Test-Path (Join-Path $_.FullName "include\jni.h") } | Select-Object -First 1).FullName }
+        Write-Host "JDK: $jdk"
+        $jvmLib = (Get-ChildItem $jdk -Recurse -Filter jvm.lib -ErrorAction SilentlyContinue | Select-Object -First 1).FullName
+        $include = Join-Path $jdk "include"
+        $wininc  = Join-Path $jdk "include\win32"
+        Write-Host "jvm.lib: $jvmLib"
+        # Compile xb_jvm.c -> xb_jvm.dll via the VS x64 toolchain.
+        $cmd = "call `"$vcvars`" && cl /nologo /LD /O2 /I`"$include`" /I`"$wininc`" `"$PWD\native\xb_jvm\xb_jvm.c`" /link /DEF:`"$PWD\native\xb_jvm\xb_jvm.def`" `"$jvmLib`" /OUT:`"$PWD\native\xb_jvm\xb_jvm.dll`""
+        cmd /c $cmd
+        if (-not (Test-Path "native\xb_jvm\xb_jvm.dll")) { throw "xb_jvm.dll was not produced" }
+        Get-Item "native\xb_jvm\xb_jvm.dll" | Select-Object Name,Length
 
     - name: Create Certificate
       shell: pwsh
