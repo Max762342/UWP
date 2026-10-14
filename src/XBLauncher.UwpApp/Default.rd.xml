@@ -6,6 +6,7 @@
 -->
 <Directives xmlns="http://schemas.microsoft.com/netfx/2013/01/metadata">
   <Application>
+    <Assembly Name="System.Text.Json" Dynamic="Required All" />
     <Assembly Name="XBLauncher.Core" Dynamic="Required All" />
     <Type Name="XBLauncher.Core.Data.Profile" Dynamic="Required All" />
     <Type Name="XBLauncher.Core.Data.LaunchTarget" Dynamic="Required All" />
