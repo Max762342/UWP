@@ -50,16 +50,19 @@ namespace XBLauncher.UwpApp.Views
                 var dev = await auth.RequestDeviceCodeAsync(_cts.Token);
 
                 CodeCard.Visibility = Visibility.Visible;
-                UriText.Text = dev.VerificationUri;
-                UserCodeText.Text = dev.UserCode;
+                UriText.Text = string.IsNullOrWhiteSpace(dev.VerificationUri)
+                    ? "https://www.microsoft.com/link"
+                    : dev.VerificationUri;
+                UserCodeText.Text = string.IsNullOrWhiteSpace(dev.UserCode)
+                    ? "(Code wird geladen...)"
+                    : dev.UserCode;
                 StatusText.Text = dev.Message ?? "Scanne den QR-Code oder gib den Code ein.";
 
-                // Render the QR code of the verification URL.
+                // Render a QR of the verification URL so a phone camera opens it
+                // directly. The user code itself is shown as text to type in.
                 var target = string.IsNullOrWhiteSpace(dev.VerificationUri)
-                    ? "https://microsoft.com/link"
+                    ? "https://www.microsoft.com/link"
                     : dev.VerificationUri;
-                if (!string.IsNullOrWhiteSpace(dev.UserCode))
-                    target += (target.Contains("?") ? "&" : "?") + "code=" + dev.UserCode;
                 RenderQr(target);
 
                 var token = await auth.PollForTokenAsync(dev,

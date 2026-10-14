@@ -13,9 +13,10 @@ namespace XBLauncher.Core.Auth;
 /// </summary>
 public sealed partial class MinecraftAuthService : IDisposable
 {
-    // Public first-party client id used by many open Minecraft launchers for the
-    // device code flow. Redirect is the standard desktop redirect.
-    private const string ClientId = "00000000402b5328";
+    // Public client id that supports the OAuth2 device-code flow. The classic
+    // Minecraft launcher id (00000000402b5328) only works for the authorization
+    // code flow, not device code; this Azure public client issues user codes.
+    private const string ClientId = "1950a258-227b-4e31-a9cf-717495945fc2";
     private const string Scope = "XboxLive.signin offline_access";
 
     private readonly HttpClient _http;
