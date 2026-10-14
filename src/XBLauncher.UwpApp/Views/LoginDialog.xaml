@@ -8,24 +8,38 @@
     Background="{StaticResource BgBrush}">
 
     <Grid Padding="40">
-        <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" MaxWidth="560">
-            <TextBlock Text="Microsoft-Anmeldung" FontSize="28" FontWeight="Bold" Foreground="{StaticResource TextBrush}" />
+        <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" MaxWidth="640">
+            <Image x:Name="LogoImage" Source="ms-appx:///Assets/GameLogo.png" Width="120" Height="120"
+                   HorizontalAlignment="Center" Margin="0,0,0,12" />
+            <TextBlock Text="XB-Launcher" FontSize="30" FontWeight="Bold" Foreground="{StaticResource TextBrush}"
+                       HorizontalAlignment="Center" />
             <TextBlock Text="Melde dich mit dem Konto an, das Minecraft: Java Edition besitzt."
-                       FontSize="14" Foreground="{StaticResource MutedBrush}" Margin="0,8,0,24" TextWrapping="Wrap" />
+                       FontSize="14" Foreground="{StaticResource MutedBrush}" Margin="0,8,0,20"
+                       TextWrapping="Wrap" HorizontalAlignment="Center" />
 
             <Border Style="{StaticResource Card}" x:Name="CodeCard" Visibility="Collapsed">
-                <StackPanel>
-                    <TextBlock Text="Öffne diese Adresse auf deinem Handy oder PC:" FontSize="13" Foreground="{StaticResource MutedBrush}" />
-                    <TextBlock x:Name="UriText" FontSize="18" FontWeight="SemiBold" Foreground="{StaticResource AccentBrush}" Margin="0,8,0,16" TextWrapping="Wrap" />
-                    <TextBlock Text="Und gib diesen Code ein:" FontSize="13" Foreground="{StaticResource MutedBrush}" />
-                    <TextBlock x:Name="UserCodeText" FontSize="40" FontWeight="Bold" Foreground="{StaticResource TextBrush}" Margin="0,8,0,0" />
-                </StackPanel>
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+                    <Border Grid.Column="0" Background="White" Padding="8" CornerRadius="8" Margin="0,0,20,0">
+                        <Image x:Name="QrImage" Width="180" Height="180" Stretch="Fill" />
+                    </Border>
+                    <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                        <TextBlock Text="Scanne den QR-Code mit der Kamera" FontSize="13" Foreground="{StaticResource MutedBrush}" />
+                        <TextBlock Text="– oder öffne auf dem Handy/PC:" FontSize="13" Foreground="{StaticResource MutedBrush}" Margin="0,0,0,8" />
+                        <TextBlock x:Name="UriText" FontSize="16" FontWeight="SemiBold" Foreground="{StaticResource AccentBrush}" TextWrapping="Wrap" />
+                        <TextBlock Text="Gib diesen Code ein:" FontSize="13" Foreground="{StaticResource MutedBrush}" Margin="0,12,0,0" />
+                        <TextBlock x:Name="UserCodeText" FontSize="38" FontWeight="Bold" Foreground="{StaticResource TextBrush}" />
+                    </StackPanel>
+                </Grid>
             </Border>
 
             <ProgressBar x:Name="LoginProgress" IsIndeterminate="True" Height="8" Margin="0,20,0,8" />
             <TextBlock x:Name="StatusText" Text="Bereit." FontSize="13" Foreground="{StaticResource MutedBrush}" TextWrapping="Wrap" />
 
-            <Button Content="Abbrechen" Style="{StaticResource SecondaryButton}" HorizontalAlignment="Left"
+            <Button Content="Abbrechen" Style="{StaticResource SecondaryButton}" HorizontalAlignment="Center"
                     Margin="0,24,0,0" Click="Cancel_Click" />
         </StackPanel>
     </Grid>

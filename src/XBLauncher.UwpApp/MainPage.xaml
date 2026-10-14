@@ -16,7 +16,9 @@
         <!-- Sidebar -->
         <Border Grid.Column="0" Background="{StaticResource SurfaceBrush}">
             <StackPanel Margin="20,24,20,24">
-                <TextBlock Text="XB-Launcher" FontSize="24" FontWeight="Bold" Foreground="{StaticResource TextBrush}" Margin="0,0,0,4" />
+                <Image Source="ms-appx:///Assets/GameLogo.png" Width="72" Height="72"
+                       HorizontalAlignment="Center" Margin="0,0,0,12" />
+                <TextBlock Text="XB-Launcher" FontSize="24" FontWeight="Bold" Foreground="{StaticResource TextBrush}" Margin="0,0,0,4" HorizontalAlignment="Center" />
                 <TextBlock Text="Minecraft Java für Xbox" FontSize="12" Foreground="{StaticResource MutedBrush}" Margin="0,0,0,24" />
 
                 <Button x:Name="NavPlay" Content="▶  Spielen" Style="{StaticResource NavButton}" Click="NavPlay_Click" Margin="0,0,0,8" />

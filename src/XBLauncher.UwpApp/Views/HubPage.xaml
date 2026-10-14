@@ -38,17 +38,26 @@
                         <Border Background="{StaticResource SurfaceBrush}" CornerRadius="12" Padding="16" Margin="0,0,10,10" Width="320">
                             <Grid>
                                 <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto" />
                                     <ColumnDefinition Width="*" />
                                     <ColumnDefinition Width="Auto" />
                                 </Grid.ColumnDefinitions>
-                                <StackPanel Grid.Column="0" Margin="0,0,10,0">
+                                <Border Grid.Column="0" Width="56" Height="56" CornerRadius="8" Margin="0,0,12,0"
+                                        VerticalAlignment="Top" Background="{StaticResource SurfaceAltBrush}">
+                                    <Image x:Name="IconImage" Stretch="Uniform">
+                                        <Image.Source>
+                                            <BitmapImage UriSource="{Binding IconUrl}" />
+                                        </Image.Source>
+                                    </Image>
+                                </Border>
+                                <StackPanel Grid.Column="1" Margin="0,0,10,0">
                                     <TextBlock Text="{Binding Title}" FontSize="15" FontWeight="SemiBold" Foreground="{StaticResource TextBrush}" TextWrapping="Wrap" />
                                     <TextBlock Text="{Binding Description}" FontSize="12" Foreground="{StaticResource MutedBrush}" TextWrapping="Wrap" MaxHeight="48" TextTrimming="CharacterEllipsis" Margin="0,4,0,0" />
                                     <TextBlock FontSize="10" Foreground="{StaticResource MutedBrush}" Margin="0,8,0,0">
                                         <Run Text="von " /><Run Text="{Binding Author}" /><Run Text="  ·  " /><Run Text="{Binding Downloads}" /><Run Text=" Downloads" />
                                     </TextBlock>
                                 </StackPanel>
-                                <Button Grid.Column="1" Content="＋" Style="{StaticResource PrimaryButton}" Padding="14,10" VerticalAlignment="Top" Click="Install_Click" />
+                                <Button Grid.Column="2" Content="＋" Style="{StaticResource PrimaryButton}" Padding="14,10" VerticalAlignment="Top" Click="Install_Click" />
                             </Grid>
                         </Border>
                     </DataTemplate>

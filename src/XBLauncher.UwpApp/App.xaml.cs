@@ -30,7 +30,14 @@ namespace XBLauncher.UwpApp
             {
                 if (rootFrame.Content == null)
                 {
-                    rootFrame.Navigate(typeof(MainPage), e.Arguments);
+                    // Sign-in always comes first: land on the login screen (with the
+                    // Voxel logo + QR code). MainPage is reached after a successful
+                    // sign-in via LoginDialog's GoBack(), or by skipping when a session
+                    // already exists.
+                    if (XBLauncher.UwpApp.Services.AppServices.Instance.Session != null)
+                        rootFrame.Navigate(typeof(MainPage), e.Arguments);
+                    else
+                        rootFrame.Navigate(typeof(XBLauncher.UwpApp.Views.LoginDialog), e.Arguments);
                 }
                 Window.Current.Activate();
             }
