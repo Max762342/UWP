@@ -135,11 +135,17 @@ public sealed partial class MinecraftAuthService
                 throw new InvalidOperationException($"Anmeldung fehlgeschlagen: {err} - {desc}");
             }
 
-            // rfc8628#section-3.5: on 'slow_down' the polling interval MUST be
-            // increased by 5 seconds; on timeout it is recommended to double it.
+            // rfc8628#section-3.5: handle polling backoff.
+            // - 'authorization_pending': keep polling at the same interval.
+            // - 'slow_down': increase interval by 5 seconds.
+            // - No error field (transient failure/timeout): double the interval.
             if (err == "slow_down")
             {
                 interval += 5;
+            }
+            else if (err == "authorization_pending")
+            {
+                // Normal waiting state - keep polling at the same interval.
             }
             else if (string.IsNullOrEmpty(err))
             {
