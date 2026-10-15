@@ -34,15 +34,52 @@ public sealed partial class MinecraftAuthService
                 "Device-Code Fehler: " + err.GetString() + (desc is null ? "" : " - " + desc));
         }
 
+        var userCode = GetString(root, "user_code");
+        var rawVerificationUri = GetString(root, "verification_uri");
+
         return new DeviceCodeResponse
         {
             DeviceCode = GetString(root, "device_code"),
-            UserCode = GetString(root, "user_code"),
-            VerificationUri = GetString(root, "verification_uri"),
+            UserCode = userCode,
+            // Replace the flaky /link landing page with the dedicated device-login
+            // page and pre-fill the user code so the user never has to type it.
+            // Fallback chain: devicelogin -> whatever Microsoft returned -> /link.
+            VerificationUri = BuildVerificationUri(rawVerificationUri, userCode),
             ExpiresIn = GetInt(root, "expires_in", 900),
             Interval = GetInt(root, "interval", 5),
             Message = GetString(root, "message")
         };
+    }
+
+    /// <summary>
+    /// Builds the URL the user has to open on their phone/PC. The /link landing
+    /// page returned by Microsoft's /devicecode endpoint intermittently shows
+    /// "Microsoft account is unavailable from this site" when a user code is
+    /// entered, so we always prefer https://microsoft.com/devicelogin and pass
+    /// the code as the user_code query parameter (the parameter name that
+    /// Microsoft's own device-login page expects).
+    /// </summary>
+    private static string BuildVerificationUri(string rawUri, string userCode)
+    {
+        // Explicit device-login page first: ?user_code= pre-fills the form and
+        // is the only variant that reliably signs third-party clients in.
+        if (!string.IsNullOrWhiteSpace(userCode))
+        {
+            return DeviceLoginUri + "?user_code=" + Uri.EscapeDataString(userCode);
+        }
+
+        // No user code available (should not happen) -> use Microsoft's URL,
+        // normalizing the /link variant to the working device-login page.
+        if (string.IsNullOrWhiteSpace(rawUri))
+            return DeviceLoginUri;
+
+        var uri = rawUri.Trim().TrimEnd('/');
+        if (uri.IndexOf("/link", StringComparison.OrdinalIgnoreCase) >= 0)
+        {
+            return DeviceLoginUri;
+        }
+
+        return rawUri;
     }
 
     private static string GetString(JsonElement e, string name) =>
@@ -95,10 +132,23 @@ public sealed partial class MinecraftAuthService
             }
 
             var err = GetString(root, "error");
-            if (err is "authorization_declined" or "expired_token" or "bad_verification_code")
+            if (err == "authorization_declined" || err == "expired_token" || err == "bad_verification_code")
             {
                 var desc = GetString(root, "error_description");
                 throw new InvalidOperationException($"Anmeldung fehlgeschlagen: {err} - {desc}");
+            }
+
+            // rfc8628#section-3.5: on 'slow_down' the polling interval MUST be
+            // increased by 5 seconds; on timeout it is recommended to double it.
+            if (err == "slow_down")
+            {
+                interval += 5;
+            }
+            else if (string.IsNullOrEmpty(err))
+            {
+                // No error field but also no token -> likely a transient failure
+                // (timeout, 5xx). Back off to be a polite poller.
+                interval = Math.Min(interval * 2, 60);
             }
 
             status?.Invoke("Warte auf Anmeldung im Browser...");

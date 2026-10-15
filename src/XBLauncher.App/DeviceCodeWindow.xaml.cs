@@ -8,7 +8,13 @@ public partial class DeviceCodeWindow : Window
     public DeviceCodeWindow(DeviceCodeResponse code)
     {
         InitializeComponent();
-        UrlText.Text = code.VerificationUri;
+        // Show the pre-filled devicelogin URL (returned by the auth service),
+        // falling back to the working /devicelogin page - never the flaky
+        // /link landing page that throws "Microsoft account is unavailable
+        // from this site".
+        UrlText.Text = string.IsNullOrWhiteSpace(code.VerificationUri)
+            ? "https://microsoft.com/devicelogin"
+            : code.VerificationUri;
         CodeText.Text = code.UserCode;
         // Xbox: no window chrome / no mouse, fill the screen.
         WindowStyle = WindowStyle.None;

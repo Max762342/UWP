@@ -17,7 +17,19 @@ public sealed partial class MinecraftAuthService : IDisposable
     // Minecraft launcher id (00000000402b5328) only works for the authorization
     // code flow, not device code; this Azure public client issues user codes.
     private const string ClientId = "1950a258-227b-4e31-a9cf-717495945fc2";
-    private const string Scope = "XboxLive.signin offline_access";
+    private const string Scope = "XboxLive.signin XboxLive.offline_access";
+
+    /// <summary>
+    /// Canonical device-login page. The generic "https://www.microsoft.com/link"
+    /// landing page returned by the /devicecode endpoint regularly throws
+    /// "Microsoft account is unavailable from this site" for third-party OAuth
+    /// clients, because the user_code query context is lost during the redirect.
+    /// The /devicelogin page is the same sign-in service but accepts the user
+    /// code via the ?user_code= parameter directly, which avoids that error.
+    /// </summary>
+    private const string DeviceLoginUri = "https://microsoft.com/devicelogin";
+
+    private const string LinkUri = "https://www.microsoft.com/link";
 
     private readonly HttpClient _http;
     private readonly JsonSerializerOptions _json = new() { PropertyNameCaseInsensitive = true };
