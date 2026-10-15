@@ -97,7 +97,7 @@ WinAppDeployCmd.exe -install -ip <xbox-ip> -file output\XB-Launcher.appx
 ## Erster Start
 
 1. **Microsoft-Anmeldung** → Device-Code wird angezeigt.
-2. Auf Handy/PC `https://microsoft.com/devicelogin` öffnen (wird auch direkt vom Launcher als QR/Link angezeigt), Code eingeben – der Code wird dabei automatisch über die URL vorausgefüllt.
+2. Auf Handy/PC `https://www.microsoft.com/link` öffnen (wird auch direkt vom Launcher als QR/Link mit Code angezeigt), Code eingeben – der Code wird dabei automatisch über die URL vorausgefüllt.
 3. Der Launcher prüft automatisch den **Besitz von Minecraft: Java Edition**.
 4. Version + Loader wählen (z. B. `1.21.11 + Fabric 0.19.2`).
 5. Beim ersten Start werden die offiziellen Spieldateien heruntergeladen

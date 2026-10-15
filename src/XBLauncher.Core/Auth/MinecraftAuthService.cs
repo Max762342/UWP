@@ -13,22 +13,20 @@ namespace XBLauncher.Core.Auth;
 /// </summary>
 public sealed partial class MinecraftAuthService : IDisposable
 {
-    // Public client id that supports the OAuth2 device-code flow. The classic
-    // Minecraft launcher id (00000000402b5328) only works for the authorization
-    // code flow, not device code; this Azure public client issues user codes.
-    private const string ClientId = "1950a258-227b-4e31-a9cf-717495945fc2";
-    private const string Scope = "XboxLive.signin XboxLive.offline_access";
+    // The official Minecraft Launcher first-party title client. This client is
+    // pre-authorized by Microsoft for the XboxLive sign-in resource, so it does
+    // NOT require user consent and is exempt from the "first party application"
+    // consent restriction that kills other public clients (e.g. Azure PowerShell).
+    // Scope must be the MBI_SSL title scope that the launcher client is registered for.
+    private const string ClientId = "00000000402b5328";
+    private const string Scope = "service::user.auth.xboxlive.com::MBI_SSL";
 
     /// <summary>
-    /// Canonical device-login page. The generic "https://www.microsoft.com/link"
-    /// landing page returned by the /devicecode endpoint regularly throws
-    /// "Microsoft account is unavailable from this site" for third-party OAuth
-    /// clients, because the user_code query context is lost during the redirect.
-    /// The /devicelogin page is the same sign-in service but accepts the user
-    /// code via the ?user_code= parameter directly, which avoids that error.
+    /// The verification URI the user has to open on their phone/PC. Microsoft's
+    /// device-code endpoint returns "https://www.microsoft.com/link"; we pass
+    /// the user_code as a query parameter so the code is pre-filled on that
+    /// page (this is what the QR code encodes as well).
     /// </summary>
-    private const string DeviceLoginUri = "https://microsoft.com/devicelogin";
-
     private const string LinkUri = "https://www.microsoft.com/link";
 
     private readonly HttpClient _http;

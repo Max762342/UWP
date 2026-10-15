@@ -50,24 +50,21 @@ namespace XBLauncher.UwpApp.Views
                 var dev = await auth.RequestDeviceCodeAsync(_cts.Token);
 
                 CodeCard.Visibility = Visibility.Visible;
-                // The auth service already returns a pre-filled
-                // https://microsoft.com/devicelogin?user_code=... URL; only fall
-                // back to the (working) /devicelogin page, never the flaky /link
-                // landing page that throws "Microsoft account is unavailable
-                // from this site".
+                // The auth service returns https://www.microsoft.com/link?user_code=XXX
+                // (the code is pre-filled on that page). Fall back to the plain
+                // /link page if no URL is available.
                 UriText.Text = string.IsNullOrWhiteSpace(dev.VerificationUri)
-                    ? "https://microsoft.com/devicelogin"
+                    ? "https://www.microsoft.com/link"
                     : dev.VerificationUri;
                 UserCodeText.Text = string.IsNullOrWhiteSpace(dev.UserCode)
                     ? "(Code wird geladen...)"
                     : dev.UserCode;
                 StatusText.Text = dev.Message ?? "Scanne den QR-Code oder gib den Code ein.";
 
-                // Render a QR of the verification URL so a phone camera opens it
-                // directly (the user code is already encoded in the URL). The
-                // user code itself is shown as text to type in manually.
+                // Render a QR of the verification URL (with the user code already
+                // embedded) so a phone camera opens the sign-in page directly.
                 var target = string.IsNullOrWhiteSpace(dev.VerificationUri)
-                    ? "https://microsoft.com/devicelogin"
+                    ? "https://www.microsoft.com/link"
                     : dev.VerificationUri;
                 RenderQr(target);
 

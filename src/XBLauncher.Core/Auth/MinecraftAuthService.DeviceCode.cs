@@ -5,7 +5,10 @@ namespace XBLauncher.Core.Auth;
 public sealed partial class MinecraftAuthService
 {
     /// <summary>
-    /// Starts the device-code flow. The user opens the returned URI on their
+    /// Starts the device-code flow via the official Minecraft Launcher client.
+    /// Uses the login.live.com OAuth2 device-code endpoints (response_type=device_code)
+    /// which issue user codes for the pre-authorized launcher client without
+    /// requiring user consent. The user opens the returned URI on their
     /// phone/PC and enters the code.
     /// </summary>
     public async Task<DeviceCodeResponse> RequestDeviceCodeAsync(CancellationToken ct = default)
@@ -13,11 +16,12 @@ public sealed partial class MinecraftAuthService
         var body = new FormUrlEncodedContent(new Dictionary<string, string>
         {
             ["client_id"] = ClientId,
+            ["response_type"] = "device_code",
             ["scope"] = Scope
         });
 
         using var resp = await _http.PostAsync(
-            "https://login.microsoftonline.com/consumers/oauth2/v2.0/devicecode", body, ct)
+            "https://login.live.com/oauth20_connect.srf", body, ct)
             .ConfigureAwait(false);
         var text = await resp.Content.ReadAsStringAsync(ct).ConfigureAwait(false);
 
@@ -41,9 +45,9 @@ public sealed partial class MinecraftAuthService
         {
             DeviceCode = GetString(root, "device_code"),
             UserCode = userCode,
-            // Replace the flaky /link landing page with the dedicated device-login
-            // page and pre-fill the user code so the user never has to type it.
-            // Fallback chain: devicelogin -> whatever Microsoft returned -> /link.
+            // Build the verification URL: the /link landing page with the user
+            // code pre-filled as a query parameter. This is what the QR code
+            // encodes so scanning it opens the sign-in page directly.
             VerificationUri = BuildVerificationUri(rawVerificationUri, userCode),
             ExpiresIn = GetInt(root, "expires_in", 900),
             Interval = GetInt(root, "interval", 5),
@@ -52,32 +56,25 @@ public sealed partial class MinecraftAuthService
     }
 
     /// <summary>
-    /// Builds the URL the user has to open on their phone/PC. The /link landing
-    /// page returned by Microsoft's /devicecode endpoint intermittently shows
-    /// "Microsoft account is unavailable from this site" when a user code is
-    /// entered, so we always prefer https://microsoft.com/devicelogin and pass
-    /// the code as the user_code query parameter (the parameter name that
-    /// Microsoft's own device-login page expects).
+    /// Builds the URL the user has to open on their phone/PC. Microsoft's
+    /// device-code endpoint returns "https://www.microsoft.com/link"; we always
+    /// append the user_code as a query parameter so the sign-in form is
+    /// pre-filled and the user never has to type the code manually. This URL is
+    /// also what the QR code encodes on the Xbox login screen.
     /// </summary>
     private static string BuildVerificationUri(string rawUri, string userCode)
     {
-        // Explicit device-login page first: ?user_code= pre-fills the form and
-        // is the only variant that reliably signs third-party clients in.
+        // Always prefer Microsoft's /link landing page (as the user requested)
+        // with the code pre-filled via ?user_code=.
         if (!string.IsNullOrWhiteSpace(userCode))
         {
-            return DeviceLoginUri + "?user_code=" + Uri.EscapeDataString(userCode);
+            return LinkUri + "?user_code=" + Uri.EscapeDataString(userCode);
         }
 
-        // No user code available (should not happen) -> use Microsoft's URL,
-        // normalizing the /link variant to the working device-login page.
+        // No user code available (should not happen) -> fall back to whatever
+        // Microsoft returned, or the plain /link page.
         if (string.IsNullOrWhiteSpace(rawUri))
-            return DeviceLoginUri;
-
-        var uri = rawUri.Trim().TrimEnd('/');
-        if (uri.IndexOf("/link", StringComparison.OrdinalIgnoreCase) >= 0)
-        {
-            return DeviceLoginUri;
-        }
+            return LinkUri;
 
         return rawUri;
     }
@@ -111,7 +108,7 @@ public sealed partial class MinecraftAuthService
             });
 
             using var resp = await _http.PostAsync(
-                "https://login.microsoftonline.com/consumers/oauth2/v2.0/token", body, ct)
+                "https://login.live.com/oauth20_token.srf", body, ct)
                 .ConfigureAwait(false);
             var text = await resp.Content.ReadAsStringAsync(ct).ConfigureAwait(false);
 
