@@ -128,6 +128,23 @@ public sealed partial class MinecraftAuthService
                 };
             }
 
+            // login.live.com MBI_SSL flow may return the token under a different
+            // field name (e.g. "t" or "ticket") or as a bare token string without
+            // the OAuth "access_token" JSON key. Check for these variants too.
+            var altToken = GetString(root, "t");
+            if (string.IsNullOrEmpty(altToken)) altToken = GetString(root, "ticket");
+            if (string.IsNullOrEmpty(altToken)) altToken = GetString(root, "token");
+            if (!string.IsNullOrEmpty(altToken))
+            {
+                return new TokenResponse
+                {
+                    AccessToken = altToken.StartsWith("t=") ? altToken : "t=" + altToken,
+                    RefreshToken = GetString(root, "refresh_token"),
+                    TokenType = GetString(root, "token_type"),
+                    ExpiresIn = GetInt(root, "expires_in", 3600)
+                };
+            }
+
             var err = GetString(root, "error");
             if (err == "authorization_declined" || err == "expired_token" || err == "bad_verification_code")
             {

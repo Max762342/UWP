@@ -15,13 +15,23 @@ public sealed partial class MinecraftAuthService
         if (msToken.AccessToken is null)
             throw new InvalidOperationException("Microsoft-Token fehlt");
 
+        // The token from login.live.com/oauth20_token.srf (MBI_SSL flow) can come
+        // in two forms:
+        // 1. A plain OAuth access_token (JWT) -> pass as "d=<token>" to Xbox Live.
+        // 2. An MBI_SSL ticket prefixed with "t=" -> pass as-is (Xbox Live expects
+        //    the "t=" prefix for these tickets, NOT "d=").
+        // Detect which format we received and build the RpsTicket accordingly.
+        var rpsTicket = msToken.AccessToken.StartsWith("t=")
+            ? msToken.AccessToken                    // already has "t=" prefix (MBI_SSL ticket)
+            : "d=" + msToken.AccessToken;            // OAuth JWT -> prefix with "d="
+
         var xblBody = new
         {
             Properties = new
             {
                 AuthMethod = "RPS",
                 SiteName = "user.auth.xboxlive.com",
-                RpsTicket = "d=" + msToken.AccessToken
+                RpsTicket = rpsTicket
             },
             RelyingParty = "http://auth.xboxlive.com",
             TokenType = "JWT"
