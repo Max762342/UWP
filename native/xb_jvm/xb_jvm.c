@@ -13,6 +13,11 @@
 #include <string.h>
 #include <stdarg.h>
 
+// JNI_VERSION_21 may not be defined in older jni.h headers. Define it if missing.
+#ifndef JNI_VERSION_21
+#define JNI_VERSION_21 0x00150000
+#endif
+
 static JavaVM* g_vm = NULL;
 static volatile LONG g_running = 0;
 
@@ -107,10 +112,10 @@ __declspec(dllexport) int XbLaunchGame(
 
     JavaVMInitArgs vmArgs;
     memset(&vmArgs, 0, sizeof(vmArgs));
-    vmArgs.version = JNI_VERSION_10;
+    vmArgs.version = JNI_VERSION_21;  // BanditLauncher uses JNI_VERSION_21
     vmArgs.nOptions = n;
     vmArgs.options = opts;
-    vmArgs.ignoreUnrecognized = JNI_TRUE;
+    vmArgs.ignoreUnrecognized = JNI_FALSE;  // BanditLauncher: strict, fail on unknown options
 
     JNIEnv* env = NULL;
     jint rc = createVm(&g_vm, (void**)&env, &vmArgs);
