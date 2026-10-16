@@ -76,6 +76,9 @@ namespace XBLauncher.UwpApp.Views
                 var session = await auth.CompleteSignInAsync(token, null, _cts.Token);
 
                 AppServices.Instance.Session = session;
+                // Persist the session + refresh token so the user stays signed in
+                // across app restarts (like BanditLauncher's PasswordVault).
+                AppServices.Instance.SaveSession(session, token.RefreshToken);
                 Result = session;
 
                 _ = Dispatcher.RunAsync(Windows.UI.Core.CoreDispatcherPriority.Normal, () =>

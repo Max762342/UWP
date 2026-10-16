@@ -32,6 +32,62 @@ namespace XBLauncher.UwpApp.Services
         /// <summary>The signed-in Minecraft session, or null when logged out.</summary>
         public MinecraftSession Session { get; set; }
 
+        /// <summary>
+        /// Loads the persisted session from disk. Returns null when no session is
+        /// saved or the file cannot be read. Called at app startup so the user
+        /// stays signed in across restarts.
+        /// </summary>
+        public MinecraftSession LoadPersistedSession()
+        {
+            try
+            {
+                var persisted = Store.Load(Store.SessionPath, () => (PersistedSession)null);
+                if (persisted is null || string.IsNullOrEmpty(persisted.AccessToken))
+                    return null;
+
+                return new MinecraftSession
+                {
+                    PlayerName = persisted.PlayerName,
+                    Uuid = persisted.Uuid,
+                    AccessToken = persisted.AccessToken,
+                    ExpiresAt = persisted.ExpiresAt,
+                    OwnsJavaEdition = persisted.OwnsJavaEdition
+                };
+            }
+            catch
+            {
+                return null;
+            }
+        }
+
+        /// <summary>
+        /// Persists the current session to disk so the user stays signed in after
+        /// an app restart. Stores both the access token and the refresh token.
+        /// </summary>
+        public void SaveSession(MinecraftSession session, string refreshToken)
+        {
+            try
+            {
+                var persisted = new PersistedSession
+                {
+                    PlayerName = session.PlayerName,
+                    Uuid = session.Uuid,
+                    AccessToken = session.AccessToken,
+                    RefreshToken = refreshToken ?? "",
+                    ExpiresAt = session.ExpiresAt,
+                    OwnsJavaEdition = session.OwnsJavaEdition
+                };
+                Store.Save(Store.SessionPath, persisted);
+            }
+            catch { }
+        }
+
+        /// <summary>Deletes the persisted session (used when signing out).</summary>
+        public void ClearSession()
+        {
+            try { Store.Delete(Store.SessionPath); } catch { }
+        }
+
         private AppServices()
         {
             Auth = new MinecraftAuthService();

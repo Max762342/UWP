@@ -34,6 +34,13 @@ namespace XBLauncher.UwpApp
                     // Voxel logo + QR code). MainPage is reached after a successful
                     // sign-in via LoginDialog's GoBack(), or by skipping when a session
                     // already exists.
+
+                    // Try to restore the persisted session so the user stays signed
+                    // in across app restarts (like BanditLauncher's PasswordVault).
+                    var persisted = XBLauncher.UwpApp.Services.AppServices.Instance.LoadPersistedSession();
+                    if (persisted != null)
+                        XBLauncher.UwpApp.Services.AppServices.Instance.Session = persisted;
+
                     if (XBLauncher.UwpApp.Services.AppServices.Instance.Session != null)
                         rootFrame.Navigate(typeof(MainPage), e.Arguments);
                     else
