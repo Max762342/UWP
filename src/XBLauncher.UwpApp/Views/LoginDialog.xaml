@@ -7,40 +7,99 @@
     mc:Ignorable="d"
     Background="{StaticResource BgBrush}">
 
-    <Grid Padding="40">
-        <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" MaxWidth="640">
-            <Image x:Name="LogoImage" Source="ms-appx:///Assets/GameLogo.png" Width="120" Height="120"
-                   HorizontalAlignment="Center" Margin="0,0,0,12" />
-            <TextBlock Text="XB-Launcher" FontSize="30" FontWeight="Bold" Foreground="{StaticResource TextBrush}"
-                       HorizontalAlignment="Center" />
-            <TextBlock Text="Melde dich mit dem Konto an, das Minecraft: Java Edition besitzt."
-                       FontSize="14" Foreground="{StaticResource MutedBrush}" Margin="0,8,0,20"
-                       TextWrapping="Wrap" HorizontalAlignment="Center" />
+    <!-- Modern Login Screen with Gradient Background -->
+    <Grid>
+        <!-- Gradient Background Overlay -->
+        <Border>
+            <Border.Background>
+                <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+                    <GradientStop Color="#FF0A0E14" Offset="0" />
+                    <GradientStop Color="#FF0F172A" Offset="0.5" />
+                    <GradientStop Color="#FF1E293B" Offset="1" />
+                </LinearGradientBrush>
+            </Border.Background>
+        </Border>
 
-            <Border Style="{StaticResource Card}" x:Name="CodeCard" Visibility="Collapsed">
-                <Grid>
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="Auto" />
-                        <ColumnDefinition Width="*" />
-                    </Grid.ColumnDefinitions>
-                    <Border Grid.Column="0" Background="White" Padding="8" CornerRadius="8" Margin="0,0,20,0">
-                        <Image x:Name="QrImage" Width="180" Height="180" Stretch="Fill" />
-                    </Border>
-                    <StackPanel Grid.Column="1" VerticalAlignment="Center">
-                        <TextBlock Text="Scanne den QR-Code mit der Kamera" FontSize="13" Foreground="{StaticResource MutedBrush}" />
-                        <TextBlock Text="– oder öffne auf dem Handy/PC:" FontSize="13" Foreground="{StaticResource MutedBrush}" Margin="0,0,0,8" />
-                        <TextBlock x:Name="UriText" FontSize="16" FontWeight="SemiBold" Foreground="{StaticResource AccentBrush}" TextWrapping="Wrap" />
-                        <TextBlock Text="Gib diesen Code ein:" FontSize="13" Foreground="{StaticResource MutedBrush}" Margin="0,12,0,0" />
-                        <TextBlock x:Name="UserCodeText" FontSize="38" FontWeight="Bold" Foreground="{StaticResource TextBrush}" />
+        <!-- Content -->
+        <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="40">
+            <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" MaxWidth="560">
+                <!-- Logo with Glow -->
+                <Border Width="140" Height="140" CornerRadius="70" HorizontalAlignment="Center" Margin="0,0,0,24"
+                        Background="{StaticResource AccentGradient}" Effect="{StaticResource ShadowLarge}">
+                    <Image x:Name="LogoImage" Source="ms-appx:///Assets/GameLogo.png" Width="120" Height="120"
+                           HorizontalAlignment="Center" VerticalAlignment="Center" />
+                </Border>
+
+                <!-- Title -->
+                <TextBlock Text="XB-Launcher" Style="{StaticResource H1}" HorizontalAlignment="Center" />
+                <TextBlock Text="Minecraft: Java Edition für Xbox" Style="{StaticResource MutedText}" 
+                           HorizontalAlignment="Center" Margin="0,8,0,32" />
+
+                <!-- Login Card -->
+                <Border Style="{StaticResource Card}" x:Name="CodeCard" Visibility="Collapsed">
+                    <StackPanel>
+                        <!-- QR Code Section -->
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+
+                            <!-- QR Code -->
+                            <Border Grid.Column="0" Background="White" Padding="12" CornerRadius="16" Margin="0,0,24,0">
+                                <Image x:Name="QrImage" Width="200" Height="200" Stretch="Fill" />
+                            </Border>
+
+                            <!-- Instructions -->
+                            <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                <TextBlock Text="Scanne den QR-Code" Style="{StaticResource H3}" Margin="0,0,0,8" />
+                                <TextBlock Text="oder öffne auf dem Handy/PC:" Style="{StaticResource MutedText}" Margin="0,0,0,12" />
+                                
+                                <!-- URL -->
+                                <Border Background="#2210B981" CornerRadius="8" Padding="12,8" Margin="0,0,0,16">
+                                    <TextBlock x:Name="UriText" FontSize="13" Foreground="{StaticResource AccentBrush}" 
+                                               TextWrapping="Wrap" FontFamily="Consolas" />
+                                </Border>
+
+                                <!-- User Code -->
+                                <TextBlock Text="Dein Code:" Style="{StaticResource MutedText}" Margin="0,0,0,4" />
+                                <Border Background="#3310B981" CornerRadius="12" Padding="16">
+                                    <TextBlock x:Name="UserCodeText" FontSize="42" FontWeight="Bold" 
+                                               Foreground="{StaticResource AccentBrush}" HorizontalAlignment="Center" />
+                                </Border>
+                            </StackPanel>
+                        </Grid>
                     </StackPanel>
-                </Grid>
-            </Border>
+                </Border>
 
-            <ProgressBar x:Name="LoginProgress" IsIndeterminate="True" Height="8" Margin="0,20,0,8" />
-            <TextBlock x:Name="StatusText" Text="Bereit." FontSize="13" Foreground="{StaticResource MutedBrush}" TextWrapping="Wrap" />
+                <!-- Progress Section -->
+                <StackPanel Margin="0,32,0,0">
+                    <!-- Modern Progress Bar -->
+                    <Grid>
+                        <Border Background="#22FFFFFF" CornerRadius="4" Height="8" />
+                        <ProgressBar x:Name="LoginProgress" IsIndeterminate="True" Height="8" CornerRadius="4" />
+                    </Grid>
+                    
+                    <!-- Status -->
+                    <Border Background="#22FFFFFF" CornerRadius="12" Padding="16,12" Margin="0,16,0,0">
+                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                            <TextBlock x:Name="StatusText" Text="Bereit." Style="{StaticResource BodyText}" 
+                                       Foreground="{StaticResource MutedBrush}" />
+                        </StackPanel>
+                    </Border>
+                </StackPanel>
 
-            <Button Content="Abbrechen" Style="{StaticResource SecondaryButton}" HorizontalAlignment="Center"
-                    Margin="0,24,0,0" Click="Cancel_Click" />
-        </StackPanel>
+                <!-- Cancel Button -->
+                <Button Content="Abbrechen" Style="{StaticResource SecondaryButton}" 
+                        HorizontalAlignment="Center" Margin="0,24,0,0" Click="Cancel_Click" />
+
+                <!-- Footer -->
+                <StackPanel Margin="0,40,0,0" HorizontalAlignment="Center">
+                    <TextBlock Text="Sicherer Microsoft-Login" Style="{StaticResource CaptionText}" HorizontalAlignment="Center" />
+                    <TextBlock Text="✓ Ownership verifiziert  ✓ Kein Crack  ✓ Offizielle APIs" 
+                               Style="{StaticResource CaptionText}" HorizontalAlignment="Center" Margin="0,4,0,0" />
+                </StackPanel>
+            </StackPanel>
+        </ScrollViewer>
     </Grid>
 </Page>
