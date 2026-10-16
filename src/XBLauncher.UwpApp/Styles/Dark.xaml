@@ -36,10 +36,8 @@
         <GradientStop Color="#FF0F172A" Offset="1" />
     </LinearGradientBrush>
 
-    <!-- Shadows -->
-    <DropShadowEffect x:Key="ShadowSmall" Color="#40000000" BlurRadius="8" ShadowDepth="2" Direction="270" />
-    <DropShadowEffect x:Key="ShadowMedium" Color="#60000000" BlurRadius="16" ShadowDepth="4" Direction="270" />
-    <DropShadowEffect x:Key="ShadowLarge" Color="#80000000" BlurRadius="32" ShadowDepth="8" Direction="270" />
+    <!-- Shadows – UWP uses ThemeShadow, not DropShadowEffect -->
+    <!-- Removed DropShadowEffect (not supported in UWP). Use visual depth via background colors instead. -->
 
     <!-- ═══ NAV BUTTON – Modern Glassmorphism ═══ -->
     <Style x:Key="NavButton" TargetType="Button">
@@ -79,7 +77,6 @@
         <Setter Property="Padding" Value="24,14" />
         <Setter Property="BorderThickness" Value="0" />
         <Setter Property="CornerRadius" Value="12" />
-        <Setter Property="Effect" Value="{StaticResource ShadowSmall}" />
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="Button">
@@ -131,7 +128,6 @@
         <Setter Property="BorderThickness" Value="1" />
         <Setter Property="CornerRadius" Value="16" />
         <Setter Property="Padding" Value="24" />
-        <Setter Property="Effect" Value="{StaticResource ShadowSmall}" />
     </Style>
 
     <!-- ═══ CARD HOVER – Elevated ═══ -->
@@ -141,7 +137,6 @@
         <Setter Property="BorderThickness" Value="1" />
         <Setter Property="CornerRadius" Value="16" />
         <Setter Property="Padding" Value="20" />
-        <Setter Property="Effect" Value="{StaticResource ShadowMedium}" />
     </Style>
 
     <!-- ═══ TEXTBOX – Modern Input ═══ -->
@@ -152,8 +147,6 @@
         <Setter Property="BorderThickness" Value="1" />
         <Setter Property="Padding" Value="16,12" />
         <Setter Property="FontSize" Value="15" />
-        <Setter Property="CornerRadius" Value="12" />
-        <Setter Property="SelectionHighlightColor" Value="{StaticResource AccentBrush}" />
     </Style>
 
     <!-- ═══ COMBOBOX – Modern Dropdown ═══ -->
@@ -164,7 +157,6 @@
         <Setter Property="BorderThickness" Value="1" />
         <Setter Property="Padding" Value="16,12" />
         <Setter Property="FontSize" Value="15" />
-        <Setter Property="CornerRadius" Value="12" />
     </Style>
 
     <!-- ═══ PROGRESSBAR – Gradient Fill ═══ -->
@@ -173,7 +165,6 @@
         <Setter Property="Foreground" Value="{StaticResource AccentGradient}" />
         <Setter Property="BorderThickness" Value="0" />
         <Setter Property="Height" Value="6" />
-        <Setter Property="CornerRadius" Value="3" />
     </Style>
 
     <!-- ═══ TEXT STYLES ═══ -->
