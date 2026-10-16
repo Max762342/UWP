@@ -13,13 +13,12 @@ namespace XBLauncher.Core.Auth;
 /// </summary>
 public sealed partial class MinecraftAuthService : IDisposable
 {
-    // The official Minecraft Launcher first-party title client. This client is
-    // pre-authorized by Microsoft for the XboxLive sign-in resource, so it does
-    // NOT require user consent and is exempt from the "first party application"
-    // consent restriction that kills other public clients (e.g. Azure PowerShell).
-    // Scope must be the MBI_SSL title scope that the launcher client is registered for.
-    private const string ClientId = "00000000402b5328";
-    private const string Scope = "service::user.auth.xboxlive.com::MBI_SSL";
+    // BanditLauncher (JavaUWP) public client id - registered as a public client
+    // with device-code flow support and XboxLive.signin + offline_access scopes.
+    // This is a standard third-party OAuth client (NOT first-party), so users can
+    // consent to it during sign-in. Source: https://github.com/veroxsity/JavaUWP
+    private const string ClientId = "c36a9fb6-4f2a-41ff-90bd-ae7cc92031eb";
+    private const string Scope = "XboxLive.signin offline_access";
 
     /// <summary>
     /// The verification URI the user has to open on their phone/PC. Microsoft's

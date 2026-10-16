@@ -5,23 +5,21 @@ namespace XBLauncher.Core.Auth;
 public sealed partial class MinecraftAuthService
 {
     /// <summary>
-    /// Starts the device-code flow via the official Minecraft Launcher client.
-    /// Uses the login.live.com OAuth2 device-code endpoints (response_type=device_code)
-    /// which issue user codes for the pre-authorized launcher client without
-    /// requiring user consent. The user opens the returned URI on their
-    /// phone/PC and enters the code.
+    /// Starts the device-code flow via the BanditLauncher (JavaUWP) public OAuth
+    /// client. Uses the standard Microsoft identity platform device-code endpoint
+    /// which issues user codes that users can consent to. The user opens the
+    /// returned URI on their phone/PC and enters the code.
     /// </summary>
     public async Task<DeviceCodeResponse> RequestDeviceCodeAsync(CancellationToken ct = default)
     {
         var body = new FormUrlEncodedContent(new Dictionary<string, string>
         {
             ["client_id"] = ClientId,
-            ["response_type"] = "device_code",
             ["scope"] = Scope
         });
 
         using var resp = await _http.PostAsync(
-            "https://login.live.com/oauth20_connect.srf", body, ct)
+            "https://login.microsoftonline.com/consumers/oauth2/v2.0/devicecode", body, ct)
             .ConfigureAwait(false);
         var text = await resp.Content.ReadAsStringAsync(ct).ConfigureAwait(false);
 
@@ -108,7 +106,7 @@ public sealed partial class MinecraftAuthService
             });
 
             using var resp = await _http.PostAsync(
-                "https://login.live.com/oauth20_token.srf", body, ct)
+                "https://login.microsoftonline.com/consumers/oauth2/v2.0/token", body, ct)
                 .ConfigureAwait(false);
             var text = await resp.Content.ReadAsStringAsync(ct).ConfigureAwait(false);
 
@@ -122,23 +120,6 @@ public sealed partial class MinecraftAuthService
                 return new TokenResponse
                 {
                     AccessToken = accessToken,
-                    RefreshToken = GetString(root, "refresh_token"),
-                    TokenType = GetString(root, "token_type"),
-                    ExpiresIn = GetInt(root, "expires_in", 3600)
-                };
-            }
-
-            // login.live.com MBI_SSL flow may return the token under a different
-            // field name (e.g. "t" or "ticket") or as a bare token string without
-            // the OAuth "access_token" JSON key. Check for these variants too.
-            var altToken = GetString(root, "t");
-            if (string.IsNullOrEmpty(altToken)) altToken = GetString(root, "ticket");
-            if (string.IsNullOrEmpty(altToken)) altToken = GetString(root, "token");
-            if (!string.IsNullOrEmpty(altToken))
-            {
-                return new TokenResponse
-                {
-                    AccessToken = altToken.StartsWith("t=") ? altToken : "t=" + altToken,
                     RefreshToken = GetString(root, "refresh_token"),
                     TokenType = GetString(root, "token_type"),
                     ExpiresIn = GetInt(root, "expires_in", 3600)
