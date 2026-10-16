@@ -25,7 +25,7 @@
             <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" MaxWidth="560">
                 <!-- Logo with Glow -->
                 <Border Width="140" Height="140" CornerRadius="70" HorizontalAlignment="Center" Margin="0,0,0,24"
-                        Background="{StaticResource AccentGradient}" Effect="{StaticResource ShadowLarge}">
+                        Background="{StaticResource AccentGradient}">
                     <Image x:Name="LogoImage" Source="ms-appx:///Assets/GameLogo.png" Width="120" Height="120"
                            HorizontalAlignment="Center" VerticalAlignment="Center" />
                 </Border>

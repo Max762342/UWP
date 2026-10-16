@@ -23,7 +23,7 @@
                 <StackPanel Margin="24,32,24,24">
                     <!-- Logo -->
                     <Border Width="80" Height="80" CornerRadius="20" HorizontalAlignment="Center" Margin="0,0,0,16"
-                            Background="{StaticResource AccentGradient}" Effect="{StaticResource ShadowSmall}">
+                            Background="{StaticResource AccentGradient}">
                         <Image Source="ms-appx:///Assets/GameLogo.png" Width="64" Height="64"
                                HorizontalAlignment="Center" VerticalAlignment="Center" />
                     </Border>

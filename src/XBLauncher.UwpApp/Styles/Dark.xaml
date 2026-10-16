@@ -80,7 +80,7 @@
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="Button">
-                    <Border x:Name="RootBorder" Background="{TemplateBinding Background}" CornerRadius="12" Padding="{TemplateBinding Padding}" Effect="{TemplateBinding Effect}">
+                    <Border x:Name="RootBorder" Background="{TemplateBinding Background}" CornerRadius="12" Padding="{TemplateBinding Padding}">
                         <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
                     </Border>
                     <ControlTemplate.Triggers>
@@ -198,11 +198,3 @@
     </Style>
 
 </ResourceDictionary>
-                        <Trigger Property="IsPressed" Value="True">
-                            <Setter TargetName="RootBorder" Property="Background" Value="#44FFFFFF" />
-                        </Trigger>
-                    </ControlTemplate.Triggers>
-                </ControlTemplate>
-            </Setter.Value>
-        </Setter>
-    </Style>
