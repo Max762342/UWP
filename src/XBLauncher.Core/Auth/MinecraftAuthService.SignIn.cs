@@ -28,10 +28,13 @@ public sealed partial class MinecraftAuthService
             RelyingParty = "http://auth.xboxlive.com",
             TokenType = "JWT"
         };
-        var xbl = await PostJsonAsync<XboxAuthResponse>(
+        var xblJson = await PostJsonAsync(
             "https://user.auth.xboxlive.com/user/authenticate", xblBody, ct).ConfigureAwait(false);
 
-        var uhs = xbl.DisplayClaims?.Xui.FirstOrDefault()?.Uhs
+        // Manual parse (like the device-code flow) for .NET Native safety - the
+        // [JsonPropertyName] reflection metadata can be stripped by the compiler.
+        var xblToken = GetString(xblJson, "Token");
+        var uhs = ExtractUhs(xblJson)
                   ?? throw new InvalidOperationException("Xbox Live Token ohne User-Hash");
 
         var xstsBody = new
@@ -39,38 +42,57 @@ public sealed partial class MinecraftAuthService
             Properties = new
             {
                 SandboxId = "RETAIL",
-                UserTokens = new[] { xbl.Token }
+                UserTokens = new[] { xblToken }
             },
             RelyingParty = "rp://api.minecraftservices.com/",
             TokenType = "JWT"
         };
-        var xsts = await PostJsonAsync<XstsResponse>(
+        var xstsJson = await PostJsonAsync(
             "https://xsts.auth.xboxlive.com/xsts/authorize", xstsBody, ct).ConfigureAwait(false);
+        var xstsToken = GetString(xstsJson, "Token");
 
-        var mcBody = new { identityToken = $"XBL3.0 x={uhs};{xsts.Token}" };
-        var mc = await PostJsonAsync<MinecraftLoginResponse>(
+        var mcBody = new { identityToken = $"XBL3.0 x={uhs};{xstsToken}" };
+        var mcJson = await PostJsonAsync(
             "https://api.minecraftservices.com/authentication/login_with_xbox", mcBody, ct)
             .ConfigureAwait(false);
+        var mcAccessToken = GetString(mcJson, "access_token");
+        var mcExpiresIn = GetInt(mcJson, "expires_in", 86400);
 
         // Ownership verification (mandatory, never skipped)
-        var ownership = forcedOwnership ?? await VerifyOwnershipAsync(mc.AccessToken, ct).ConfigureAwait(false);
+        var ownership = forcedOwnership ?? await VerifyOwnershipAsync(mcAccessToken, ct).ConfigureAwait(false);
         if (!ownership.OwnsJavaEdition)
             throw new InvalidOperationException(
                 "Dieses Konto besitzt Minecraft: Java Edition nicht. XB-Launcher startet keine nicht-lizenzierten Kopien.");
 
-        var profile = await GetProfileAsync(mc.AccessToken, ct).ConfigureAwait(false);
+        var profile = await GetProfileAsync(mcAccessToken, ct).ConfigureAwait(false);
 
         return new MinecraftSession
         {
             PlayerName = profile.Name,
             Uuid = profile.Id,
-            AccessToken = mc.AccessToken,
-            ExpiresAt = DateTimeOffset.UtcNow.AddSeconds(mc.ExpiresIn > 0 ? mc.ExpiresIn : 86400),
+            AccessToken = mcAccessToken,
+            ExpiresAt = DateTimeOffset.UtcNow.AddSeconds(mcExpiresIn > 0 ? mcExpiresIn : 86400),
             OwnsJavaEdition = true
         };
     }
 
-    private async Task<T> PostJsonAsync<T>(string url, object body, CancellationToken ct)
+    /// <summary>
+    /// Extracts the user hash (uhs) from the DisplayClaims.xui[0].uhs field of an
+    /// Xbox Live / XSTS auth response, using manual JsonDocument parsing (safe
+    /// under .NET Native where [JsonPropertyName] reflection may be stripped).
+    /// </summary>
+    private static string? ExtractUhs(JsonElement root)
+    {
+        if (!root.TryGetProperty("DisplayClaims", out var dc)) return null;
+        if (!dc.TryGetProperty("xui", out var xuiArr)) return null;
+        if (xuiArr.ValueKind != JsonValueKind.Array || xuiArr.GetArrayLength() == 0) return null;
+        var first = xuiArr[0];
+        return first.TryGetProperty("uhs", out var uhs) && uhs.ValueKind == JsonValueKind.String
+            ? uhs.GetString()
+            : null;
+    }
+
+    private async Task<JsonElement> PostJsonAsync(string url, object body, CancellationToken ct)
     {
         var json = JsonSerializer.Serialize(body);
         using var content = new StringContent(json, Encoding.UTF8, "application/json");
@@ -78,7 +100,7 @@ public sealed partial class MinecraftAuthService
         var text = await resp.Content.ReadAsStringAsync(ct).ConfigureAwait(false);
         if (!resp.IsSuccessStatusCode)
             throw new InvalidOperationException($"Auth-Fehler {(int)resp.StatusCode}: {text}");
-        return JsonSerializer.Deserialize<T>(text, _json)
-               ?? throw new InvalidOperationException($"Leere Antwort von {url}");
+        var doc = JsonDocument.Parse(string.IsNullOrWhiteSpace(text) ? "{}" : text);
+        return doc.RootElement.Clone();  // Clone so it survives the using-dispose
     }
 }

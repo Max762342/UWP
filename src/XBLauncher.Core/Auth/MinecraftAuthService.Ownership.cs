@@ -20,11 +20,26 @@ public sealed partial class MinecraftAuthService
             return new OwnershipResult { OwnsJavaEdition = false, Detail = $"HTTP {(int)resp.StatusCode}" };
 
         var text = await resp.Content.ReadAsStringAsync(ct).ConfigureAwait(false);
-        var data = JsonSerializer.Deserialize<GameOwnershipResponse>(text, _json);
 
-        var owns = data?.Items.Any(i =>
-            i.Name is "product_minecraft" or "game_minecraft" or "minecraft_java"
-            || i.Signature is not null) == true;
+        // Manual parse (see PostJsonAsync) for .NET Native safety.
+        using var doc = JsonDocument.Parse(string.IsNullOrWhiteSpace(text) ? "{}" : text);
+        var root = doc.RootElement;
+
+        if (!root.TryGetProperty("items", out var items) || items.ValueKind != JsonValueKind.Array)
+            return new OwnershipResult { OwnsJavaEdition = false, Detail = "Keine items-Liste in der Antwort" };
+
+        var owns = false;
+        foreach (var item in items.EnumerateArray())
+        {
+            if (item.ValueKind != JsonValueKind.Object) continue;
+            if (!item.TryGetProperty("name", out var name) || name.ValueKind != JsonValueKind.String) continue;
+            var n = name.GetString();
+            if (n == "product_minecraft" || n == "game_minecraft" || n == "minecraft_java")
+            {
+                owns = true;
+                break;
+            }
+        }
 
         return new OwnershipResult
         {
@@ -43,7 +58,15 @@ public sealed partial class MinecraftAuthService
         using var resp = await _http.SendAsync(req, ct).ConfigureAwait(false);
         resp.EnsureSuccessStatusCode();
         var text = await resp.Content.ReadAsStringAsync(ct).ConfigureAwait(false);
-        return JsonSerializer.Deserialize<MinecraftProfile>(text, _json)
-               ?? throw new InvalidOperationException("Minecraft-Profil fehlt");
+
+        // Manual parse (see PostJsonAsync) for .NET Native safety.
+        using var doc = JsonDocument.Parse(string.IsNullOrWhiteSpace(text) ? "{}" : text);
+        var root = doc.RootElement;
+
+        return new MinecraftProfile
+        {
+            Id = GetString(root, "id"),
+            Name = GetString(root, "name")
+        };
     }
 }
