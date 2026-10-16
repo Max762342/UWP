@@ -17,16 +17,19 @@ public sealed partial class MinecraftAuthService
 
         // BanditLauncher/JavaUWP style: the OAuth access_token is passed to Xbox
         // Live as an RPS ticket with the "d=" prefix (standard OAuth JWT flow).
-        var xblBody = new
+        // The JSON body must use EXACTLY the field names Xbox Live expects
+        // (Properties/AuthMethod/SiteName/RpsTicket/RelyingParty/TokenType) -
+        // use an explicit dictionary to avoid any serializer naming issues.
+        var xblBody = new Dictionary<string, object>
         {
-            Properties = new
+            ["Properties"] = new Dictionary<string, object>
             {
-                AuthMethod = "RPS",
-                SiteName = "user.auth.xboxlive.com",
-                RpsTicket = "d=" + msToken.AccessToken
+                ["AuthMethod"] = "RPS",
+                ["SiteName"] = "user.auth.xboxlive.com",
+                ["RpsTicket"] = "d=" + msToken.AccessToken
             },
-            RelyingParty = "http://auth.xboxlive.com",
-            TokenType = "JWT"
+            ["RelyingParty"] = "http://auth.xboxlive.com",
+            ["TokenType"] = "JWT"
         };
         var xblJson = await PostJsonAsync(
             "https://user.auth.xboxlive.com/user/authenticate", xblBody, ct).ConfigureAwait(false);
@@ -37,21 +40,24 @@ public sealed partial class MinecraftAuthService
         var uhs = ExtractUhs(xblJson)
                   ?? throw new InvalidOperationException("Xbox Live Token ohne User-Hash");
 
-        var xstsBody = new
+        var xstsBody = new Dictionary<string, object>
         {
-            Properties = new
+            ["Properties"] = new Dictionary<string, object>
             {
-                SandboxId = "RETAIL",
-                UserTokens = new[] { xblToken }
+                ["SandboxId"] = "RETAIL",
+                ["UserTokens"] = new[] { xblToken }
             },
-            RelyingParty = "rp://api.minecraftservices.com/",
-            TokenType = "JWT"
+            ["RelyingParty"] = "rp://api.minecraftservices.com/",
+            ["TokenType"] = "JWT"
         };
         var xstsJson = await PostJsonAsync(
             "https://xsts.auth.xboxlive.com/xsts/authorize", xstsBody, ct).ConfigureAwait(false);
         var xstsToken = GetString(xstsJson, "Token");
 
-        var mcBody = new { identityToken = $"XBL3.0 x={uhs};{xstsToken}" };
+        var mcBody = new Dictionary<string, object>
+        {
+            ["identityToken"] = $"XBL3.0 x={uhs};{xstsToken}"
+        };
         var mcJson = await PostJsonAsync(
             "https://api.minecraftservices.com/authentication/login_with_xbox", mcBody, ct)
             .ConfigureAwait(false);
@@ -99,7 +105,12 @@ public sealed partial class MinecraftAuthService
         using var resp = await _http.PostAsync(url, content, ct).ConfigureAwait(false);
         var text = await resp.Content.ReadAsStringAsync(ct).ConfigureAwait(false);
         if (!resp.IsSuccessStatusCode)
-            throw new InvalidOperationException($"Auth-Fehler {(int)resp.StatusCode}: {text}");
+        {
+            // Include the response body in the error so we can diagnose auth failures
+            // (e.g. "400" from Xbox Live with an XErr code explaining the real cause).
+            throw new InvalidOperationException(
+                $"Auth-Fehler {(int)resp.StatusCode} von {url}: {text}");
+        }
         var doc = JsonDocument.Parse(string.IsNullOrWhiteSpace(text) ? "{}" : text);
         return doc.RootElement.Clone();  // Clone so it survives the using-dispose
     }
