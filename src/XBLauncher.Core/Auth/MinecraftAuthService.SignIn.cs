@@ -6,8 +6,35 @@ namespace XBLauncher.Core.Auth;
 public sealed partial class MinecraftAuthService
 {
     /// <summary>
-    /// Exchanges the Microsoft token for Xbox Live, XSTS and finally a Minecraft
-    /// Services access token, then verifies that the account owns Java Edition.
+    /// Escapes a string for safe inclusion in a JSON string literal. Same as
+    /// BanditLauncher (JavaUWP) JsonEscape in http_client.cpp.
+    /// </summary>
+    private static string JsonEscape(string value)
+    {
+        var sb = new StringBuilder(value.Length + 8);
+        foreach (var c in value)
+        {
+            switch (c)
+            {
+                case '\\': sb.Append("\\\\"); break;
+                case '"': sb.Append("\\\""); break;
+                case '\b': sb.Append("\\b"); break;
+                case '\f': sb.Append("\\f"); break;
+                case '\n': sb.Append("\\n"); break;
+                case '\r': sb.Append("\\r"); break;
+                case '\t': sb.Append("\\t"); break;
+                default:
+                    if (c < 0x20) sb.Append("\\u").Append(((int)c).ToString("x4"));
+                    else sb.Append(c);
+                    break;
+            }
+        }
+        return sb.ToString();
+    }
+
+    /// <summary>
+    /// Exchanges the Microsoft token for Xbox Live, XSTS and Minecraft Services.
+    /// 1:1 port of BanditLauncher BuildMinecraftAuth.
     /// </summary>
     public async Task<MinecraftSession> CompleteSignInAsync(TokenResponse msToken,
         OwnershipResult? forcedOwnership = null, CancellationToken ct = default)
@@ -15,60 +42,42 @@ public sealed partial class MinecraftAuthService
         if (msToken.AccessToken is null)
             throw new InvalidOperationException("Microsoft-Token fehlt");
 
-        // BanditLauncher/JavaUWP style: the OAuth access_token is passed to Xbox
-        // Live as an RPS ticket with the "d=" prefix (standard OAuth JWT flow).
-        // The JSON body must use EXACTLY the field names Xbox Live expects
-        // (Properties/AuthMethod/SiteName/RpsTicket/RelyingParty/TokenType) -
-        // use an explicit dictionary to avoid any serializer naming issues.
-        var xblBody = new Dictionary<string, object>
-        {
-            ["Properties"] = new Dictionary<string, object>
-            {
-                ["AuthMethod"] = "RPS",
-                ["SiteName"] = "user.auth.xboxlive.com",
-                ["RpsTicket"] = "d=" + msToken.AccessToken
-            },
-            ["RelyingParty"] = "http://auth.xboxlive.com",
-            ["TokenType"] = "JWT"
-        };
-        var xblJson = await PostJsonAsync(
-            "https://user.auth.xboxlive.com/user/authenticate", xblBody, ct).ConfigureAwait(false);
+        var xblPayload =
+            "{\"Properties\":{\"AuthMethod\":\"RPS\",\"SiteName\":\"user.auth.xboxlive.com\",\"RpsTicket\":\"d=" +
+            JsonEscape(msToken.AccessToken) +
+            "\"},\"RelyingParty\":\"http://auth.xboxlive.com\",\"TokenType\":\"JWT\"}";
+        var xblJson = await PostJsonRawAsync(
+            "https://user.auth.xboxlive.com/user/authenticate", xblPayload, ct).ConfigureAwait(false);
 
-        // Manual parse (like the device-code flow) for .NET Native safety - the
-        // [JsonPropertyName] reflection metadata can be stripped by the compiler.
         var xblToken = GetString(xblJson, "Token");
-        var uhs = ExtractUhs(xblJson)
-                  ?? throw new InvalidOperationException("Xbox Live Token ohne User-Hash");
+        var uhs = ExtractUhs(xblJson);
+        if (string.IsNullOrEmpty(xblToken) || string.IsNullOrEmpty(uhs))
+            throw new InvalidOperationException("Xbox Live auth response was missing token fields.");
 
-        var xstsBody = new Dictionary<string, object>
-        {
-            ["Properties"] = new Dictionary<string, object>
-            {
-                ["SandboxId"] = "RETAIL",
-                ["UserTokens"] = new[] { xblToken }
-            },
-            ["RelyingParty"] = "rp://api.minecraftservices.com/",
-            ["TokenType"] = "JWT"
-        };
-        var xstsJson = await PostJsonAsync(
-            "https://xsts.auth.xboxlive.com/xsts/authorize", xstsBody, ct).ConfigureAwait(false);
+        var xstsPayload =
+            "{\"Properties\":{\"SandboxId\":\"RETAIL\",\"UserTokens\":[\"" +
+            JsonEscape(xblToken) +
+            "\"]},\"RelyingParty\":\"rp://api.minecraftservices.com/\",\"TokenType\":\"JWT\"}";
+        var xstsJson = await PostJsonRawAsync(
+            "https://xsts.auth.xboxlive.com/xsts/authorize", xstsPayload, ct).ConfigureAwait(false);
         var xstsToken = GetString(xstsJson, "Token");
+        if (string.IsNullOrEmpty(xstsToken))
+            throw new InvalidOperationException("XSTS response was missing token fields.");
 
-        var mcBody = new Dictionary<string, object>
-        {
-            ["identityToken"] = $"XBL3.0 x={uhs};{xstsToken}"
-        };
-        var mcJson = await PostJsonAsync(
-            "https://api.minecraftservices.com/authentication/login_with_xbox", mcBody, ct)
+        var identity = "XBL3.0 x=" + uhs + ";" + xstsToken;
+        var mcPayload = "{\"identityToken\":\"" + JsonEscape(identity) + "\"}";
+        var mcJson = await PostJsonRawAsync(
+            "https://api.minecraftservices.com/authentication/login_with_xbox", mcPayload, ct)
             .ConfigureAwait(false);
         var mcAccessToken = GetString(mcJson, "access_token");
         var mcExpiresIn = GetInt(mcJson, "expires_in", 86400);
+        if (string.IsNullOrEmpty(mcAccessToken))
+            throw new InvalidOperationException("Minecraft login response did not include access_token.");
 
-        // Ownership verification (mandatory, never skipped)
         var ownership = forcedOwnership ?? await VerifyOwnershipAsync(mcAccessToken, ct).ConfigureAwait(false);
         if (!ownership.OwnsJavaEdition)
             throw new InvalidOperationException(
-                "Dieses Konto besitzt Minecraft: Java Edition nicht. XB-Launcher startet keine nicht-lizenzierten Kopien.");
+                "Dieses Konto besitzt Minecraft: Java Edition nicht.");
 
         var profile = await GetProfileAsync(mcAccessToken, ct).ConfigureAwait(false);
 
@@ -82,36 +91,28 @@ public sealed partial class MinecraftAuthService
         };
     }
 
-    /// <summary>
-    /// Extracts the user hash (uhs) from the DisplayClaims.xui[0].uhs field of an
-    /// Xbox Live / XSTS auth response, using manual JsonDocument parsing (safe
-    /// under .NET Native where [JsonPropertyName] reflection may be stripped).
-    /// </summary>
     private static string? ExtractUhs(JsonElement root)
     {
         if (!root.TryGetProperty("DisplayClaims", out var dc)) return null;
         if (!dc.TryGetProperty("xui", out var xuiArr)) return null;
-        if (xuiArr.ValueKind != JsonValueKind.Array || xuiArr.GetArrayLength() == 0) return null;
-        var first = xuiArr[0];
-        return first.TryGetProperty("uhs", out var uhs) && uhs.ValueKind == JsonValueKind.String
-            ? uhs.GetString()
-            : null;
+        if (xuiArr.ValueKind != JsonValueKind.Array) return null;
+        foreach (var entry in xuiArr.EnumerateArray())
+        {
+            if (entry.ValueKind != JsonValueKind.Object) continue;
+            if (entry.TryGetProperty("uhs", out var uhs) && uhs.ValueKind == JsonValueKind.String)
+                return uhs.GetString();
+        }
+        return null;
     }
 
-    private async Task<JsonElement> PostJsonAsync(string url, object body, CancellationToken ct)
+    private async Task<JsonElement> PostJsonRawAsync(string url, string jsonBody, CancellationToken ct)
     {
-        var json = JsonSerializer.Serialize(body);
-        using var content = new StringContent(json, Encoding.UTF8, "application/json");
+        using var content = new StringContent(jsonBody, Encoding.UTF8, "application/json");
         using var resp = await _http.PostAsync(url, content, ct).ConfigureAwait(false);
         var text = await resp.Content.ReadAsStringAsync(ct).ConfigureAwait(false);
         if (!resp.IsSuccessStatusCode)
-        {
-            // Include the response body in the error so we can diagnose auth failures
-            // (e.g. "400" from Xbox Live with an XErr code explaining the real cause).
-            throw new InvalidOperationException(
-                $"Auth-Fehler {(int)resp.StatusCode} von {url}: {text}");
-        }
+            throw new InvalidOperationException($"Auth-Fehler {(int)resp.StatusCode} von {url}: {text}");
         var doc = JsonDocument.Parse(string.IsNullOrWhiteSpace(text) ? "{}" : text);
-        return doc.RootElement.Clone();  // Clone so it survives the using-dispose
+        return doc.RootElement.Clone();
     }
 }
