@@ -45,7 +45,10 @@ public static class GameProcess
 
     public static Process Start(LaunchPlan plan, string logFile)
     {
-        Directory.CreateDirectory(Path.GetDirectoryName(logFile)!);
+        // Safe path handling - GetDirectoryName can return null
+        var logDir = Path.GetDirectoryName(logFile);
+        if (!string.IsNullOrEmpty(logDir))
+            Directory.CreateDirectory(logDir);
 
         var psi = new ProcessStartInfo
         {
@@ -71,32 +74,48 @@ public static class GameProcess
 
         var proc = new Process { StartInfo = psi, EnableRaisingEvents = true };
 
-        var writer = new StreamWriter(logFile, append: true) { AutoFlush = true };
-        proc.OutputDataReceived += (_, e) =>
+        // Safe log file creation - check path is valid
+        StreamWriter writer = null;
+        try
         {
-            if (e.Data is not null)
-                lock (writer) writer.WriteLine("[OUT] " + e.Data);
-        };
-        proc.ErrorDataReceived += (_, e) =>
+            if (!string.IsNullOrEmpty(logFile))
+            {
+                writer = new StreamWriter(logFile, append: true) { AutoFlush = true };
+            }
+        }
+        catch (Exception ex)
         {
-            if (e.Data is not null)
-                lock (writer) writer.WriteLine("[ERR] " + e.Data);
-        };
+            System.Diagnostics.Debug.WriteLine($"Failed to create log file: {ex.Message}");
+        }
 
-        // Dispose the log writer once the process has fully exited and the
-        // redirected output streams are drained, so the file is not locked forever.
-        proc.Exited += (_, _) =>
+        if (writer != null)
         {
-            try
+            proc.OutputDataReceived += (_, e) =>
             {
-                proc.WaitForExit();
-                lock (writer) writer.Dispose();
-            }
-            catch
+                if (e.Data is not null)
+                    lock (writer) writer.WriteLine("[OUT] " + e.Data);
+            };
+            proc.ErrorDataReceived += (_, e) =>
             {
-                // best effort – never let cleanup throw on a background thread
-            }
-        };
+                if (e.Data is not null)
+                    lock (writer) writer.WriteLine("[ERR] " + e.Data);
+            };
+
+            // Dispose the log writer once the process has fully exited and the
+            // redirected output streams are drained, so the file is not locked forever.
+            proc.Exited += (_, _) =>
+            {
+                try
+                {
+                    proc.WaitForExit();
+                    lock (writer) writer.Dispose();
+                }
+                catch
+                {
+                    // best effort – never let cleanup throw on a background thread
+                }
+            };
+        }
 
         proc.Start();
         proc.BeginOutputReadLine();
