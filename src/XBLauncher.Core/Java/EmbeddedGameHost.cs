@@ -38,7 +38,11 @@ public sealed class EmbeddedGameHost
         // call off the UI/async context.
         return await Task.Run(() =>
         {
-            Directory.CreateDirectory(Path.GetDirectoryName(logFile)!);
+            // Safe path handling - GetDirectoryName can return null for root paths
+            var logDir = Path.GetDirectoryName(logFile);
+            if (!string.IsNullOrEmpty(logDir))
+                Directory.CreateDirectory(logDir);
+            
             var opt = jvmOptions.ToArray();
             var args = gameArgs.ToArray();
             return JniBridge.XbLaunchGame(
